@@ -7,7 +7,7 @@ let mainWindow = null
 let serverProcess = null
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
-const BACKEND_PORT = Number(process.env.PORT || 3001)
+const BACKEND_PORT = Number(process.env.PORT || 3900)
 const DEV_URL = process.env.ELECTRON_START_URL || 'http://localhost:7200'
 const PROD_URL = `http://127.0.0.1:${BACKEND_PORT}`
 

@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-The UI is served on port 5173. A small Node bridge on port 3001 talks to MQTT brokers over TCP/TLS/WebSocket so the browser can connect to any broker.
+The UI is served on port 7200. A small Node bridge on port 3900 talks to MQTT brokers over TCP/TLS/WebSocket so the browser can connect to any broker.
 
 ## Features
 

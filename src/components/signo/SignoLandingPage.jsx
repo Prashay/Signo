@@ -230,7 +230,7 @@ export default function SignoLandingPage({ onLaunchApp, mqttRate = 0 }) {
                   {mqttRate > 0 ? (
                     <strong className="text-emerald-400 font-bold">{Math.round(mqttRate)} msg/s active</strong>
                   ) : (
-                    'Bridge Ready (ws:3001)'
+                    'Bridge Ready (ws:3900)'
                   )}
                 </span>
               </div>

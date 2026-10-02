@@ -28,6 +28,16 @@ import SubscribeBar from '../SubscribeBar.jsx'
 import LoadTest from '../LoadTest.jsx'
 import ConnectionList from '../ConnectionList.jsx'
 import BridgeStatusModal from './BridgeStatusModal.jsx'
+import {
+  connectBrowserMqtt,
+  disconnectBrowserMqtt,
+  subscribeBrowserMqtt,
+  unsubscribeBrowserMqtt,
+  publishBrowserMqtt,
+  startBrowserLoad,
+  stopBrowserLoad,
+  decodeBrowserPayload
+} from '../../lib/browserMqtt.js'
 import { emptyRoot, filterTree, upsertMany } from '../../lib/mqttTree.js'
 import { loadList, makeConnection, persistList, patchConn, pushConnEvent } from '../../lib/connections.js'
 import { useThemeSettings } from '../../context/ThemeSettingsContext.jsx'
@@ -234,9 +244,9 @@ export default function MqttStudioApp({ onRateChange }) {
 
       ws.onclose = () => {
         setBridge('offline')
-        // If not custom and running on localhost/127.0.0.1 not on port 3001, try direct 3001 as fallback
-        if (!custom && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3001') {
-          const directUrl = 'ws://127.0.0.1:3001/ws'
+        // If not custom and running on localhost/127.0.0.1 not on port 3900, try direct 3900 as fallback
+        if (!custom && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3900') {
+          const directUrl = 'ws://127.0.0.1:3900/ws'
           try {
             const fallbackWs = new WebSocket(directUrl)
             fallbackWs.onopen = () => {
@@ -317,7 +327,39 @@ export default function MqttStudioApp({ onRateChange }) {
     }
     setConnections((prev) => prev.map((c) => (c.id === conn.id ? next : c)))
     pendingRef.current[conn.id] = []
-    send({ type: 'connect', id: conn.id, options: next })
+
+    if (bridge === 'ready') {
+      send({ type: 'connect', id: conn.id, options: next })
+    } else {
+      // Local websocket proxy not available: use browser-native MQTT engine
+      connectBrowserMqtt(conn.id, next, {
+        onStatus: ({ status, error, url, note: n }) => {
+          update(conn.id, { status, error: error || '', url: url || '' })
+          if (n) note(conn.id, n)
+          else note(conn.id, `status: ${status}${error ? ` (${error})` : ''}`)
+        },
+        onSubscribed: ({ topic, qos, error }) => {
+          setConnections((prev) =>
+            prev.map((c) => {
+              if (c.id !== conn.id) return c
+              const existing = c.subs.filter((s) => s.topic !== topic)
+              const nextSubs = error ? existing : [...existing, { topic, qos }]
+              return { ...c, subs: nextSubs }
+            })
+          )
+          note(conn.id, error ? `sub failed: ${topic} (${error})` : `subscribed: ${topic}`)
+        },
+        onUnsubscribed: ({ topic }) => {
+          setConnections((prev) =>
+            prev.map((c) => (c.id === conn.id ? { ...c, subs: c.subs.filter((s) => s.topic !== topic) } : c))
+          )
+          note(conn.id, `unsubscribed: ${topic}`)
+        },
+        onMessage: (msg) => {
+          ingest(conn.id, msg)
+        }
+      })
+    }
   }
 
   const saveConnection = (form) => {
@@ -344,13 +386,21 @@ export default function MqttStudioApp({ onRateChange }) {
 
   const disconnect = (id) => {
     stopLocalLoad(id)
-    send({ type: 'disconnect', id })
+    if (bridge === 'ready') {
+      send({ type: 'disconnect', id })
+    } else {
+      disconnectBrowserMqtt(id)
+    }
     update(id, { status: 'disconnected', loadRunning: false })
   }
 
   const removeConnection = (id) => {
     stopLocalLoad(id)
-    send({ type: 'disconnect', id })
+    if (bridge === 'ready') {
+      send({ type: 'disconnect', id })
+    } else {
+      disconnectBrowserMqtt(id)
+    }
     setConnections((prev) => {
       const next = prev.filter((c) => c.id !== id)
       if (activeId === id) setActiveId(next[0]?.id || '')
@@ -372,21 +422,33 @@ export default function MqttStudioApp({ onRateChange }) {
     if (!existing) setConnections((prev) => [...prev, demo])
     setActiveId(demo.id)
     startLocalLoad(demo.id, '6339', 100, DEMO_TOPICS)
-    send({
-      type: 'loadtest',
-      id: demo.id,
-      action: 'start',
-      store: '6339',
-      rate: 100,
-      topics: DEMO_TOPICS
-    })
+    if (bridge === 'ready') {
+      send({
+        type: 'loadtest',
+        id: demo.id,
+        action: 'start',
+        store: '6339',
+        rate: 100,
+        topics: DEMO_TOPICS
+      })
+    } else {
+      startBrowserLoad(demo.id, { store: '6339', rate: 100, topics: DEMO_TOPICS }, {
+        onMessage: (msg) => ingest(demo.id, msg),
+        onLoadStatus: ({ running }) => update(demo.id, { loadRunning: running })
+      })
+    }
     note(demo.id, 'demo started @ 100/s on 6 topics')
     setActiveStudioTab('load')
   }
 
   const stopDemo = (id) => {
     stopLocalLoad(id)
-    send({ type: 'loadtest', id, action: 'stop' })
+    if (bridge === 'ready') {
+      send({ type: 'loadtest', id, action: 'stop' })
+    } else {
+      stopBrowserLoad(id)
+      update(id, { loadRunning: false })
+    }
   }
 
   const visibleTree = useMemo(
@@ -473,25 +535,29 @@ export default function MqttStudioApp({ onRateChange }) {
                   : 'border-emerald-300 bg-emerald-50 text-emerald-700'
                 : bridge === 'offline'
                 ? isDark
-                  ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
-                  : 'border-rose-200 bg-rose-50 text-rose-700'
+                  ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:border-cyan-400/50'
+                  : 'border-cyan-300 bg-cyan-50 text-cyan-800 hover:bg-cyan-100'
                 : isDark
                 ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
                 : 'border-amber-200 bg-amber-50 text-amber-700'
             }`}
-            title="Click for WebSocket proxy bridge status & setup guide"
+            title={
+              bridge === 'ready'
+                ? 'Local TCP bridge active on port 3900'
+                : 'Direct in-browser WebSockets active · Click to view bridge status & TCP setup'
+            }
           >
             <span
               className={`h-1.5 w-1.5 rounded-full ${
                 bridge === 'ready'
                   ? 'bg-emerald-400 animate-pulse'
                   : bridge === 'offline'
-                  ? 'bg-rose-500'
+                  ? 'bg-cyan-400'
                   : 'bg-amber-400 animate-ping'
               }`}
             />
             <span className="text-[10px] uppercase font-bold tracking-wider">
-              {bridge === 'ready' ? 'Bridge Live' : bridge === 'offline' ? 'Bridge Offline' : 'Connecting'}
+              {bridge === 'ready' ? 'Bridge Live (3900)' : bridge === 'offline' ? 'Direct Web Mode' : 'Detecting...'}
             </span>
           </button>
 
@@ -760,12 +826,20 @@ export default function MqttStudioApp({ onRateChange }) {
           <div className="flex-1 min-h-0 overflow-y-auto">
             {activeStudioTab === 'publish' && (
               <PublishPanel
-                connected={Boolean(active) && bridge === 'ready'}
+                connected={Boolean(active) && (connected || bridge === 'ready')}
                 onPublish={(p) => {
                   if (!active) return
-                  send({ type: 'subscribe', id: active.id, topic: p.topic, qos: p.qos || 0 })
-                  send({ type: 'publish', id: active.id, ...p })
                   const text = String(p.payload ?? '')
+                  if (bridge === 'ready') {
+                    send({ type: 'subscribe', id: active.id, topic: p.topic, qos: p.qos || 0 })
+                    send({ type: 'publish', id: active.id, ...p })
+                  } else {
+                    // Browser direct mode
+                    subscribeBrowserMqtt(active.id, p.topic, p.qos || 0)
+                    publishBrowserMqtt(active.id, p.topic, text, { qos: p.qos || 0, retain: Boolean(p.retain) }, (err) => {
+                      if (err) note(active.id, `publish error: ${err}`)
+                    })
+                  }
                   ingest(active.id, {
                     type: 'message',
                     id: active.id,
@@ -789,15 +863,23 @@ export default function MqttStudioApp({ onRateChange }) {
                   onStart={(cfg) => {
                     if (!active) return
                     startLocalLoad(active.id, cfg.store, cfg.rate, cfg.topics)
-                    send({ type: 'subscribe', id: active.id, topic: `store/${cfg.store}/#`, qos: 0 })
-                    send({
-                      type: 'loadtest',
-                      id: active.id,
-                      action: 'start',
-                      store: cfg.store,
-                      rate: cfg.rate,
-                      topics: cfg.topics
-                    })
+                    if (bridge === 'ready') {
+                      send({ type: 'subscribe', id: active.id, topic: `store/${cfg.store}/#`, qos: 0 })
+                      send({
+                        type: 'loadtest',
+                        id: active.id,
+                        action: 'start',
+                        store: cfg.store,
+                        rate: cfg.rate,
+                        topics: cfg.topics
+                      })
+                    } else {
+                      subscribeBrowserMqtt(active.id, `store/${cfg.store}/#`, 0)
+                      startBrowserLoad(active.id, cfg, {
+                        onMessage: (msg) => ingest(active.id, msg),
+                        onLoadStatus: ({ running }) => update(active.id, { loadRunning: running })
+                      })
+                    }
                   }}
                   onStop={() => active && stopDemo(active.id)}
                 />
@@ -825,7 +907,22 @@ export default function MqttStudioApp({ onRateChange }) {
 
                   <SubscribeBar
                     connected={connected}
-                    onSubscribe={(topic, qos) => active && send({ type: 'subscribe', id: active.id, topic, qos })}
+                    onSubscribe={(topic, qos) => {
+                      if (!active) return
+                      if (bridge === 'ready') {
+                        send({ type: 'subscribe', id: active.id, topic, qos })
+                      } else {
+                        subscribeBrowserMqtt(active.id, topic, qos, (err) => {
+                          if (err) {
+                            note(active.id, `sub failed: ${topic} (${err})`)
+                          } else {
+                            const existing = (active.subs || []).filter((s) => s.topic !== topic)
+                            update(active.id, { subs: [...existing, { topic, qos }] })
+                            note(active.id, `subscribed: ${topic}`)
+                          }
+                        })
+                      }
+                    }}
                   />
 
                   {/* Subscription tags pool */}
@@ -838,7 +935,17 @@ export default function MqttStudioApp({ onRateChange }) {
                       (active?.subs || []).map((s) => (
                         <button
                           key={s.topic}
-                          onClick={() => active && send({ type: 'unsubscribe', id: active.id, topic: s.topic })}
+                          onClick={() => {
+                            if (!active) return
+                            if (bridge === 'ready') {
+                              send({ type: 'unsubscribe', id: active.id, topic: s.topic })
+                            } else {
+                              unsubscribeBrowserMqtt(active.id, s.topic, () => {
+                                update(active.id, { subs: (active.subs || []).filter((sub) => sub.topic !== s.topic) })
+                                note(active.id, `unsubscribed: ${s.topic}`)
+                              })
+                            }
+                          }}
                           className={`group flex items-center gap-1.5 rounded-lg border px-2 py-0.5 font-mono text-[10px] transition-all ${
                             isDark
                               ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:border-rose-500/40 hover:bg-rose-500/15 hover:text-rose-300'

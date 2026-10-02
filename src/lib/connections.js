@@ -54,9 +54,31 @@ export function persistList(list) {
 export function loadList() {
   try {
     const raw = localStorage.getItem('mqtt-studio-connections')
-    if (!raw) return []
+    if (!raw) {
+      return [
+        makeConnection({
+          name: 'EMQX Public (WebSockets)',
+          protocol: 'wss',
+          host: 'broker.emqx.io',
+          port: 8084,
+          path: '/mqtt',
+          subscriptions: [{ topic: 'testtopic/#', qos: 0 }]
+        })
+      ]
+    }
     const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
+    if (!Array.isArray(parsed) || !parsed.length) {
+      return [
+        makeConnection({
+          name: 'EMQX Public (WebSockets)',
+          protocol: 'wss',
+          host: 'broker.emqx.io',
+          port: 8084,
+          path: '/mqtt',
+          subscriptions: [{ topic: 'testtopic/#', qos: 0 }]
+        })
+      ]
+    }
     return parsed.map((c) => makeConnection(c))
   } catch {
     return []

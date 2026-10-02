@@ -87,10 +87,11 @@ export function formatTime(ts) {
 
 export const PRESETS = [
   {
-    name: 'HiveMQ Public',
-    protocol: 'mqtt',
-    host: 'broker.hivemq.com',
-    port: 1883,
+    name: 'EMQX Cloud (WSS Direct)',
+    protocol: 'wss',
+    host: 'broker.emqx.io',
+    port: 8084,
+    path: '/mqtt',
     clientId: '',
     username: '',
     password: '',
@@ -100,7 +101,35 @@ export const PRESETS = [
     subscriptions: [{ topic: '#', qos: 0 }]
   },
   {
-    name: 'EMQX Public',
+    name: 'HiveMQ Web (WSS Direct)',
+    protocol: 'wss',
+    host: 'broker.hivemq.com',
+    port: 8884,
+    path: '/mqtt',
+    clientId: '',
+    username: '',
+    password: '',
+    keepalive: 60,
+    clean: true,
+    protocolVersion: 4,
+    subscriptions: [{ topic: '#', qos: 0 }]
+  },
+  {
+    name: 'Mosquitto Test (WSS Direct)',
+    protocol: 'wss',
+    host: 'test.mosquitto.org',
+    port: 8081,
+    path: '',
+    clientId: '',
+    username: '',
+    password: '',
+    keepalive: 60,
+    clean: true,
+    protocolVersion: 4,
+    subscriptions: [{ topic: '#', qos: 0 }]
+  },
+  {
+    name: 'EMQX TCP (Port 1883 - Proxy)',
     protocol: 'mqtt',
     host: 'broker.emqx.io',
     port: 1883,
@@ -113,9 +142,9 @@ export const PRESETS = [
     subscriptions: [{ topic: '#', qos: 0 }]
   },
   {
-    name: 'Mosquitto Test',
+    name: 'Local Docker (TCP 1883)',
     protocol: 'mqtt',
-    host: 'test.mosquitto.org',
+    host: '127.0.0.1',
     port: 1883,
     clientId: '',
     username: '',
@@ -126,10 +155,10 @@ export const PRESETS = [
     subscriptions: [{ topic: '#', qos: 0 }]
   },
   {
-    name: 'Local broker',
-    protocol: 'mqtt',
+    name: 'Local Docker (WS 9001)',
+    protocol: 'ws',
     host: '127.0.0.1',
-    port: 1883,
+    port: 9001,
     clientId: '',
     username: '',
     password: '',

@@ -26,7 +26,7 @@ export default function BridgeStatusModal({
     setProbing(true)
     setProbeResult(null)
     try {
-      const res = await fetch('http://127.0.0.1:3001/api/health', { method: 'GET', signal: AbortSignal.timeout(2000) })
+      const res = await fetch('http://127.0.0.1:3900/api/health', { method: 'GET', signal: AbortSignal.timeout(2000) })
       if (res.ok) {
         const data = await res.json()
         setProbeResult({ ok: true, message: `Backend responded: ${JSON.stringify(data)}` })
@@ -34,7 +34,7 @@ export default function BridgeStatusModal({
         setProbeResult({ ok: false, message: `HTTP status: ${res.status}` })
       }
     } catch (err) {
-      setProbeResult({ ok: false, message: 'Could not reach http://127.0.0.1:3001. Process is not running.' })
+      setProbeResult({ ok: false, message: 'Could not reach http://127.0.0.1:3900. Process is not running.' })
     } finally {
       setProbing(false)
     }
@@ -78,13 +78,17 @@ export default function BridgeStatusModal({
                 >
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${
-                      bridge === 'ready' ? 'bg-emerald-400 animate-pulse' : bridge === 'offline' ? 'bg-rose-400' : 'bg-amber-400'
+                      bridge === 'ready' ? 'bg-emerald-400 animate-pulse' : 'bg-cyan-400'
                     }`}
                   />
-                  {bridge === 'ready' ? 'Live' : bridge === 'offline' ? 'Offline' : 'Connecting'}
+                  {bridge === 'ready' ? 'Proxy Live (3900)' : 'Direct Web Mode Active'}
                 </span>
               </div>
-              <p className="text-xs text-mist-400 mt-0.5">Local Node.js TCP/MQTT proxy process (port 3001)</p>
+              <p className="text-xs text-mist-400 mt-0.5">
+                {bridge === 'ready'
+                  ? 'Local Node.js TCP/MQTT proxy process is online on port 3900'
+                  : 'In-browser WebSockets engine active · No proxy needed for WSS brokers'}
+              </p>
             </div>
           </div>
 
@@ -98,15 +102,36 @@ export default function BridgeStatusModal({
 
         {/* Diagnostic Explanation */}
         <div className="mt-5 space-y-4 text-xs">
+          {bridge === 'ready' ? (
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+              <h4 className="font-semibold text-emerald-300 flex items-center gap-2 mb-1.5">
+                <CheckCircle2 size={15} />
+                <span>Local WebSocket TCP Proxy is Active</span>
+              </h4>
+              <p className="text-mist-200 leading-relaxed">
+                Your browser is connected to the local Signo bridge process on port 3900. You can freely dial raw TCP MQTT brokers (ports 1883/8883) and Kafka clusters.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4">
+              <h4 className="font-semibold text-cyan-300 flex items-center gap-2 mb-1.5">
+                <CheckCircle2 size={15} />
+                <span>Direct Web Mode is Active (No Proxy Required)</span>
+              </h4>
+              <p className="text-mist-200 leading-relaxed">
+                Signo can connect directly to MQTT brokers using WebSockets (<code className="font-mono text-cyan-300">wss://</code> or <code className="font-mono text-cyan-300">ws://</code>). You can publish, subscribe, explore topic trees, and run load simulations right inside your browser without running any background server!
+              </p>
+            </div>
+          )}
+
+          {/* When is proxy needed? */}
           <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
             <h4 className="font-semibold text-white flex items-center gap-2 mb-1.5">
               <AlertTriangle size={14} className="text-amber-400" />
-              <span>Why is the Bridge Offline?</span>
+              <span>When is the Local WebSocket Proxy needed?</span>
             </h4>
             <p className="text-mist-300 leading-relaxed">
-              Signo uses a lightweight background Node.js bridge (<code className="font-mono text-cyan-300">server/index.js</code>)
-              to connect your browser to real TCP MQTT brokers (ports 1883/8883) and Kafka nodes. If only the frontend was started,
-              the bridge is not yet running.
+              Standard web browsers cannot open raw TCP sockets to ports 1883 or 8883 due to browser security sandbox rules. If your broker does <strong>not</strong> support WebSockets and only listens on raw TCP, start the local Node.js proxy (<code className="font-mono text-indigo-300">server/index.js</code>) on port 3900.
             </p>
           </div>
 
@@ -114,28 +139,12 @@ export default function BridgeStatusModal({
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="font-mono text-[11px] uppercase tracking-wider font-bold text-mist-400">
-                How to Start the Bridge
+                To Enable Raw TCP (Ports 1883 / 8883)
               </span>
             </div>
 
             <div className="space-y-2">
-              {/* Command 1: Full dev (client + server) */}
-              <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#090b10] px-3.5 py-2.5 font-mono text-xs">
-                <div className="flex items-center gap-2 text-mist-200">
-                  <Terminal size={14} className="text-indigo-400 shrink-0" />
-                  <span>npm run dev</span>
-                </div>
-                <button
-                  onClick={() => handleCopy('npm run dev')}
-                  className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 px-2 py-0.5 rounded bg-indigo-500/10 transition-colors"
-                  title="Copy command"
-                >
-                  {copiedCmd === 'npm run dev' ? <Check size={12} /> : <Copy size={12} />}
-                  <span>{copiedCmd === 'npm run dev' ? 'Copied' : 'Copy'}</span>
-                </button>
-              </div>
-
-              {/* Command 2: Server only */}
+              {/* Command 1: Server only */}
               <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#090b10] px-3.5 py-2.5 font-mono text-xs">
                 <div className="flex items-center gap-2 text-mist-200">
                   <Terminal size={14} className="text-cyan-400 shrink-0" />
@@ -150,15 +159,31 @@ export default function BridgeStatusModal({
                   <span>{copiedCmd === 'npm run server' ? 'Copied' : 'Copy'}</span>
                 </button>
               </div>
+
+              {/* Command 2: Full dev (client + server) */}
+              <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#090b10] px-3.5 py-2.5 font-mono text-xs">
+                <div className="flex items-center gap-2 text-mist-200">
+                  <Terminal size={14} className="text-indigo-400 shrink-0" />
+                  <span>npm run dev</span>
+                </div>
+                <button
+                  onClick={() => handleCopy('npm run dev')}
+                  className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 px-2 py-0.5 rounded bg-indigo-500/10 transition-colors"
+                  title="Copy command"
+                >
+                  {copiedCmd === 'npm run dev' ? <Check size={12} /> : <Copy size={12} />}
+                  <span>{copiedCmd === 'npm run dev' ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
             </div>
             <p className="mt-1.5 text-[11px] text-mist-400">
-              Run either command in your terminal inside the <code className="font-mono text-mist-300">Signo</code> directory.
+              Run in your terminal inside the <code className="font-mono text-mist-300">Signo</code> directory.
             </p>
           </div>
 
           {/* GitHub Pages note */}
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-3 text-[11px] text-mist-400 leading-relaxed">
-            <strong className="text-mist-200">Note on GitHub Pages / Static Hosting:</strong> GitHub Pages cannot execute Node.js processes. To stream TCP traffic while browsing online, keep <code className="font-mono text-indigo-300">npm run server</code> active locally or enter your custom bridge URL below.
+            <strong className="text-mist-200">GitHub Pages / Static Hosting:</strong> When browsing online, Signo uses Direct Web Mode with WebSockets. If you have a custom remote bridge server, you can configure its URL below.
           </div>
 
           {/* Custom Bridge URL override */}
@@ -169,7 +194,7 @@ export default function BridgeStatusModal({
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="ws://127.0.0.1:3001/ws (default: auto)"
+                placeholder="ws://127.0.0.1:3900/ws (default: auto)"
                 value={customUrlInput}
                 onChange={(e) => setCustomUrlInput(e.target.value)}
                 className="flex-1 rounded-xl border border-white/10 bg-[#090b10] px-3 py-1.5 font-mono text-xs text-white placeholder:text-mist-500 focus:border-indigo-500 focus:outline-none"
@@ -209,7 +234,7 @@ export default function BridgeStatusModal({
             className="flex items-center gap-1.5 text-xs text-mist-400 hover:text-white transition-colors disabled:opacity-50"
           >
             <RefreshCw size={12} className={probing ? 'animate-spin' : ''} />
-            <span>{probing ? 'Probing port 3001...' : 'Probe Local Server'}</span>
+            <span>{probing ? 'Probing port 3900...' : 'Probe Local Server'}</span>
           </button>
 
           <div className="flex items-center gap-2">
