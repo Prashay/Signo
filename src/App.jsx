@@ -51,6 +51,33 @@ function MainLayout() {
         </div>
       </main>
 
+      {/* Single Bottom Footer */}
+      <footer
+        className={`flex items-center justify-center px-4 py-2 text-xs font-medium border-t backdrop-blur-md select-none shrink-0 transition-colors z-20 ${
+          isDark
+            ? 'border-white/[0.06] bg-[#07090d]/90 text-mist-400'
+            : 'border-slate-200 bg-white/95 text-slate-600 shadow-2xs'
+        }`}
+      >
+        <div className="flex items-center gap-1.5 tracking-tight">
+          <span>designed and developed by</span>
+          <a
+            href="https://github.com/prashay"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`font-semibold transition-all hover:underline ${
+              isDark
+                ? 'text-cyan-400 hover:text-cyan-300'
+                : 'text-indigo-600 hover:text-indigo-800'
+            }`}
+          >
+            @prashant jha
+          </a>
+          <span className="opacity-40 mx-0.5">|</span>
+          <span className="font-mono text-[11px] opacity-80">2026</span>
+        </div>
+      </footer>
+
       {/* Global Settings & Appearance Modal */}
       <SettingsModal />
     </div>
