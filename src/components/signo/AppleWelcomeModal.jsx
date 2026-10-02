@@ -20,25 +20,27 @@ export default function AppleWelcomeModal({ isOpen, onClose, onLaunchApp }) {
   useEffect(() => {
     if (!isOpen) return
 
-    // Progress animation
-    setProgress(20)
-    const t1 = setTimeout(() => setProgress(55), 400)
-    const t2 = setTimeout(() => setProgress(85), 1000)
-    const t3 = setTimeout(() => setProgress(100), 1600)
+    // Progress animation spanning 2.6 - 3.0 seconds
+    setProgress(15)
+    const t1 = setTimeout(() => setProgress(42), 600)
+    const t2 = setTimeout(() => setProgress(72), 1400)
+    const t3 = setTimeout(() => setProgress(92), 2200)
+    const t4 = setTimeout(() => setProgress(100), 2800)
 
-    // Language rotation
+    // Language rotation every 1100ms
     const interval = setInterval(() => {
       setFade(true)
       setTimeout(() => {
         setGreetingIndex((prev) => (prev + 1) % greetings.length)
         setFade(false)
-      }, 250)
-    }, 1500)
+      }, 220)
+    }, 1100)
 
     return () => {
       clearTimeout(t1)
       clearTimeout(t2)
       clearTimeout(t3)
+      clearTimeout(t4)
       clearInterval(interval)
     }
   }, [isOpen])

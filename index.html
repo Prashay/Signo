@@ -321,6 +321,9 @@
     <!-- Apple Bootloader Controller Script -->
     <script>
       (function() {
+        const startTime = Date.now();
+        const MIN_DISPLAY_TIME_MS = 2600; // Guaranteed at least 2.6 - 3.0 seconds display
+
         const greetings = [
           'hello',
           'bonjour',
@@ -339,8 +342,9 @@
         const screenEl = document.getElementById('apple-boot-screen');
 
         let isDismissed = false;
+        let reactReady = false;
 
-        // Multilingual rotation
+        // Multilingual rotation (cycles smoothly every 1100ms)
         const greetTimer = setInterval(function() {
           if (isDismissed || !langEl) return;
           langEl.classList.add('fade-switch');
@@ -348,52 +352,59 @@
             greetIdx = (greetIdx + 1) % greetings.length;
             langEl.textContent = greetings[greetIdx];
             langEl.classList.remove('fade-switch');
-          }, 250);
-        }, 1400);
+          }, 220);
+        }, 1100);
 
-        // Natural progress animation curve
-        let progress = 12;
+        // Natural progress animation curve timed across the 2.6s-3s window
+        let progress = 14;
         if (barEl) barEl.style.width = progress + '%';
 
-        const p1 = setTimeout(function() {
+        setTimeout(function() {
           if (!isDismissed && barEl) {
             progress = 38;
             barEl.style.width = progress + '%';
             if (statusEl) statusEl.textContent = 'Initializing telemetry bridges...';
           }
-        }, 220);
+        }, 500);
 
-        const p2 = setTimeout(function() {
+        setTimeout(function() {
           if (!isDismissed && barEl) {
-            progress = 72;
+            progress = 65;
             barEl.style.width = progress + '%';
             if (statusEl) statusEl.textContent = 'Configuring event engines...';
           }
-        }, 750);
+        }, 1200);
 
-        const p3 = setTimeout(function() {
+        setTimeout(function() {
           if (!isDismissed && barEl) {
-            progress = 90;
+            progress = 88;
             barEl.style.width = progress + '%';
-            if (statusEl) statusEl.textContent = 'Almost ready...';
+            if (statusEl) statusEl.textContent = 'Preparing streaming workspace...';
           }
-        }, 1500);
+        }, 1900);
 
-        // Reveal skip button at 2.8s if network is slow
-        const pSlow = setTimeout(function() {
+        setTimeout(function() {
+          if (!isDismissed && barEl && !reactReady) {
+            progress = 95;
+            barEl.style.width = progress + '%';
+            if (statusEl) statusEl.textContent = 'Finalizing runtime...';
+          }
+        }, 2400);
+
+        // Reveal skip button at 4.5s only if network is genuinely slow
+        setTimeout(function() {
           if (!isDismissed && skipBtn) {
             skipBtn.classList.add('visible');
           }
-        }, 2800);
+        }, 4500);
 
-        // Global dismiss handler called when React mounts or when user clicks Enter
-        window.dismissSignoBoot = function() {
+        function finishAndExit() {
           if (isDismissed) return;
           isDismissed = true;
           clearInterval(greetTimer);
 
           if (barEl) {
-            barEl.style.transition = 'width 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+            barEl.style.transition = 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
             barEl.style.width = '100%';
           }
           if (statusEl) {
@@ -409,15 +420,30 @@
                 }
               }, 500);
             }
-          }, 180);
+          }, 280);
+        }
+
+        // Global dismiss handler called when React mounts or when user clicks Enter
+        window.dismissSignoBoot = function(forceImmediate) {
+          reactReady = true;
+          if (isDismissed) return;
+
+          const elapsed = Date.now() - startTime;
+          const remaining = forceImmediate ? 0 : Math.max(0, MIN_DISPLAY_TIME_MS - elapsed);
+
+          if (remaining > 0) {
+            setTimeout(finishAndExit, remaining);
+          } else {
+            finishAndExit();
+          }
         };
 
-        // Safety fallback: Never keep user stuck for more than 4.2 seconds
+        // Safety fallback: Never keep user stuck for more than 6 seconds
         setTimeout(function() {
           if (!isDismissed) {
-            window.dismissSignoBoot();
+            finishAndExit();
           }
-        }, 4200);
+        }, 6000);
       })();
     </script>
 
