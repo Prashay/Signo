@@ -27,6 +27,7 @@ import ConnectModal from '../ConnectModal.jsx'
 import SubscribeBar from '../SubscribeBar.jsx'
 import LoadTest from '../LoadTest.jsx'
 import ConnectionList from '../ConnectionList.jsx'
+import BridgeStatusModal from './BridgeStatusModal.jsx'
 import { emptyRoot, filterTree, upsertMany } from '../../lib/mqttTree.js'
 import { loadList, makeConnection, persistList, patchConn, pushConnEvent } from '../../lib/connections.js'
 import { useThemeSettings } from '../../context/ThemeSettingsContext.jsx'
@@ -57,6 +58,8 @@ export default function MqttStudioApp({ onRateChange }) {
   const countsRef = useRef({})
 
   const [bridge, setBridge] = useState('idle')
+  const [isBridgeModalOpen, setIsBridgeModalOpen] = useState(false)
+  const [bridgeUrl, setBridgeUrl] = useState(() => localStorage.getItem('signo_bridge_url') || '')
   const [modal, setModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [connections, setConnections] = useState(() => loadList())
@@ -135,22 +138,36 @@ export default function MqttStudioApp({ onRateChange }) {
 
   useEffect(() => {
     let reconnect
-    const connectBridge = () => {
-      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const ws = new WebSocket(`${proto}//${window.location.host}/ws`)
+    const connectBridge = (overrideUrl) => {
+      clearTimeout(reconnect)
+      if (wsRef.current) {
+        try {
+          wsRef.current.close()
+        } catch {}
+      }
+
+      setBridge('connecting')
+
+      const custom = overrideUrl !== undefined ? overrideUrl : bridgeUrl
+      let targetUrl = custom ? custom.trim() : ''
+
+      if (!targetUrl) {
+        const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        targetUrl = `${proto}//${window.location.host}/ws`
+      }
+
+      let ws
+      try {
+        ws = new WebSocket(targetUrl)
+      } catch (err) {
+        setBridge('offline')
+        reconnect = setTimeout(() => connectBridge(), 4000)
+        return
+      }
+
       wsRef.current = ws
 
-      ws.onopen = () => {
-        setBridge('ready')
-      }
-      ws.onclose = () => {
-        setBridge('offline')
-        reconnect = setTimeout(connectBridge, 2000)
-      }
-      ws.onerror = () => {
-        setBridge('error')
-      }
-      ws.onmessage = (event) => {
+      const handleIncoming = (event) => {
         let frame
         try {
           frame = JSON.parse(event.data)
@@ -204,6 +221,45 @@ export default function MqttStudioApp({ onRateChange }) {
           ingest(frame.id, frame)
         }
       }
+
+      ws.onopen = () => {
+        setBridge('ready')
+      }
+
+      ws.onmessage = handleIncoming
+
+      ws.onerror = () => {
+        setBridge('offline')
+      }
+
+      ws.onclose = () => {
+        setBridge('offline')
+        // If not custom and running on localhost/127.0.0.1 not on port 3001, try direct 3001 as fallback
+        if (!custom && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3001') {
+          const directUrl = 'ws://127.0.0.1:3001/ws'
+          try {
+            const fallbackWs = new WebSocket(directUrl)
+            fallbackWs.onopen = () => {
+              wsRef.current = fallbackWs
+              setBridge('ready')
+              fallbackWs.onmessage = handleIncoming
+              fallbackWs.onerror = () => setBridge('offline')
+              fallbackWs.onclose = () => {
+                setBridge('offline')
+                reconnect = setTimeout(() => connectBridge(), 4000)
+              }
+            }
+            fallbackWs.onerror = () => {
+              setBridge('offline')
+              reconnect = setTimeout(() => connectBridge(), 4000)
+            }
+          } catch {
+            reconnect = setTimeout(() => connectBridge(), 4000)
+          }
+        } else {
+          reconnect = setTimeout(() => connectBridge(), 4000)
+        }
+      }
     }
 
     connectBridge()
@@ -211,7 +267,7 @@ export default function MqttStudioApp({ onRateChange }) {
       clearTimeout(reconnect)
       if (wsRef.current) wsRef.current.close()
     }
-  }, [ingest, note, update])
+  }, [ingest, note, update, bridgeUrl])
 
   useEffect(() => {
     const flush = setInterval(() => {
@@ -407,8 +463,10 @@ export default function MqttStudioApp({ onRateChange }) {
         {/* Center Live Telemetry Gauges */}
         <div className="hidden items-center gap-2.5 md:flex">
           {/* Bridge indicator */}
-          <div
-            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-mono transition-colors ${
+          <button
+            type="button"
+            onClick={() => setIsBridgeModalOpen(true)}
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-mono transition-all cursor-pointer hover:brightness-110 active:scale-95 ${
               bridge === 'ready'
                 ? isDark
                   ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
@@ -421,7 +479,7 @@ export default function MqttStudioApp({ onRateChange }) {
                 ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
                 : 'border-amber-200 bg-amber-50 text-amber-700'
             }`}
-            title="Local WebSocket proxy bridge (port 3001)"
+            title="Click for WebSocket proxy bridge status & setup guide"
           >
             <span
               className={`h-1.5 w-1.5 rounded-full ${
@@ -435,7 +493,7 @@ export default function MqttStudioApp({ onRateChange }) {
             <span className="text-[10px] uppercase font-bold tracking-wider">
               {bridge === 'ready' ? 'Bridge Live' : bridge === 'offline' ? 'Bridge Offline' : 'Connecting'}
             </span>
-          </div>
+          </button>
 
           {/* Rate Speedometer */}
           <div
@@ -917,6 +975,30 @@ export default function MqttStudioApp({ onRateChange }) {
           setEditing(null)
         }}
         onSave={saveConnection}
+      />
+
+      {/* Bridge Diagnostic & Setup Modal */}
+      <BridgeStatusModal
+        isOpen={isBridgeModalOpen}
+        onClose={() => setIsBridgeModalOpen(false)}
+        bridge={bridge}
+        bridgeUrl={bridgeUrl}
+        onUpdateBridgeUrl={(newUrl) => {
+          setBridgeUrl(newUrl)
+          if (newUrl) {
+            localStorage.setItem('signo_bridge_url', newUrl)
+          } else {
+            localStorage.removeItem('signo_bridge_url')
+          }
+          if (wsRef.current) {
+            try { wsRef.current.close() } catch {}
+          }
+        }}
+        onRetry={() => {
+          if (wsRef.current) {
+            try { wsRef.current.close() } catch {}
+          }
+        }}
       />
     </div>
   )
