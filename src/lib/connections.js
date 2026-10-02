@@ -1,0 +1,75 @@
+import { emptyRoot } from './mqttTree.js'
+
+export function newId() {
+  return `conn-${Math.random().toString(16).slice(2, 10)}`
+}
+
+export function makeConnection(opts = {}) {
+  return {
+    id: opts.id || newId(),
+    name: opts.name || 'New connection',
+    protocol: opts.protocol || 'mqtt',
+    host: opts.host || 'broker.emqx.io',
+    port: opts.port || 1883,
+    path: opts.path || '',
+    clientId: opts.clientId || '',
+    username: opts.username || '',
+    password: opts.password || '',
+    keepalive: opts.keepalive || 60,
+    clean: opts.clean !== false,
+    protocolVersion: opts.protocolVersion || 4,
+    rejectUnauthorized: opts.rejectUnauthorized !== false,
+    subscriptions: opts.subscriptions || [{ topic: '#', qos: 0 }],
+    status: 'disconnected',
+    error: '',
+    tree: emptyRoot(),
+    subs: [],
+    events: [],
+    loadRunning: false,
+    selectedPath: '',
+    selectedNode: null,
+    paused: false
+  }
+}
+
+export function persistList(list) {
+  const safe = list.map((c) => ({
+    id: c.id,
+    name: c.name,
+    protocol: c.protocol,
+    host: c.host,
+    port: c.port,
+    path: c.path,
+    clientId: c.clientId,
+    username: c.username,
+    keepalive: c.keepalive,
+    clean: c.clean,
+    protocolVersion: c.protocolVersion,
+    rejectUnauthorized: c.rejectUnauthorized,
+    subscriptions: c.subscriptions
+  }))
+  localStorage.setItem('mqtt-studio-connections', JSON.stringify(safe))
+}
+
+export function loadList() {
+  try {
+    const raw = localStorage.getItem('mqtt-studio-connections')
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.map((c) => makeConnection(c))
+  } catch {
+    return []
+  }
+}
+
+export function patchConn(list, id, patch) {
+  return list.map((c) => (c.id === id ? { ...c, ...patch } : c))
+}
+
+export function pushConnEvent(list, id, text) {
+  return list.map((c) => {
+    if (c.id !== id) return c
+    return { ...c, events: [{ text, at: Date.now() }, ...c.events].slice(0, 50) }
+  })
+}

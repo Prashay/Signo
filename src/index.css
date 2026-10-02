@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --app-font-family: "IBM Plex Sans", system-ui, sans-serif;
+  --app-font-size: 14px;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: var(--app-font-size, 14px);
+  transition: font-size 0.15s ease;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  width: 100%;
+  overflow: hidden;
+  font-family: var(--app-font-family, "IBM Plex Sans", system-ui, sans-serif);
+}
+
+#root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  font-family: var(--app-font-family, "IBM Plex Sans", system-ui, sans-serif);
+}
+
+/* Dark Theme Body Background (Default) */
+body {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(76, 141, 255, 0.12), transparent 55%),
+    radial-gradient(900px 500px at 90% 0%, rgba(94, 234, 212, 0.06), transparent 50%),
+    #07090d;
+  color: #e8eef6;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Light Theme Body Background */
+[data-theme="light"] body {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(99, 102, 241, 0.08), transparent 55%),
+    radial-gradient(900px 500px at 90% 0%, rgba(6, 182, 212, 0.06), transparent 50%),
+    #f8fafc;
+  color: #0f172a;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a3648;
+  border-radius: 999px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+}
+
+.tree-row:hover {
+  background: rgba(76, 141, 255, 0.08);
+}
+
+[data-theme="light"] .tree-row:hover {
+  background: rgba(76, 141, 255, 0.06);
+}
+
+.pulse-dot {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
