@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Radio,
   Layers,
@@ -17,10 +18,12 @@ import {
   Binary
 } from 'lucide-react'
 import { useThemeSettings } from '../../context/ThemeSettingsContext.jsx'
+import AppleWelcomeModal from './AppleWelcomeModal.jsx'
 
 export default function SignoLandingPage({ onLaunchApp, mqttRate = 0 }) {
   const { theme } = useThemeSettings()
   const isDark = theme === 'dark'
+  const [showAppleWelcome, setShowAppleWelcome] = useState(false)
 
   return (
     <div
@@ -56,15 +59,30 @@ export default function SignoLandingPage({ onLaunchApp, mqttRate = 0 }) {
       <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 py-8 sm:px-6 lg:px-8">
         {/* Hero Header */}
         <div className="mb-10 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-xs font-medium backdrop-blur-md shadow-xs transition-all mb-4">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-            <span
-              className={`font-mono uppercase text-[10px] tracking-widest font-bold ${
-                isDark ? 'text-indigo-300' : 'text-indigo-700'
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+            <div className="inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-xs font-medium backdrop-blur-md shadow-xs transition-all">
+              <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+              <span
+                className={`font-mono uppercase text-[10px] tracking-widest font-bold ${
+                  isDark ? 'text-indigo-300' : 'text-indigo-700'
+                }`}
+              >
+                Signo Enterprise Suite · v2.4
+              </span>
+            </div>
+
+            <button
+              onClick={() => setShowAppleWelcome(true)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium backdrop-blur-md transition-all shadow-xs cursor-pointer ${
+                isDark
+                  ? 'border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08] hover:border-white/20'
+                  : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
               }`}
+              title="Experience Apple Welcome animation"
             >
-              Signo Enterprise Suite · v2.4
-            </span>
+              <Sparkles size={12} className="text-indigo-400" />
+              <span>Apple Welcome Experience</span>
+            </button>
           </div>
 
           <h1 className="text-3xl font-extrabold tracking-tight sm:text-5xl font-display">
@@ -384,6 +402,13 @@ export default function SignoLandingPage({ onLaunchApp, mqttRate = 0 }) {
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Apple Welcome Experience Modal */}
+      <AppleWelcomeModal
+        isOpen={showAppleWelcome}
+        onClose={() => setShowAppleWelcome(false)}
+        onLaunchApp={onLaunchApp}
+      />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import SignoHeader from './components/signo/SignoHeader.jsx'
 import MqttStudioApp from './components/mqtt/MqttStudioApp.jsx'
 import KfkaxApp from './components/kafka/KfkaxApp.jsx'
@@ -12,6 +12,13 @@ function MainLayout() {
   const [mqttRate, setMqttRate] = useState(0)
   const { theme } = useThemeSettings()
   const isDark = theme === 'dark'
+
+  useEffect(() => {
+    // Notify Apple Bootloader that React is mounted and ready
+    if (typeof window !== 'undefined' && typeof window.dismissSignoBoot === 'function') {
+      window.dismissSignoBoot()
+    }
+  }, [])
 
   return (
     <div
