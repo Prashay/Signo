@@ -8,6 +8,13 @@ import express from 'express'
 import cors from 'cors'
 import { WebSocketServer } from 'ws'
 import mqtt from 'mqtt'
+import {
+  fetchKafkaTopics,
+  fetchKafkaClusterDetails,
+  createKafkaTopic,
+  produceKafkaMessage,
+  fetchKafkaConsumerGroups
+} from './kafkaService.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distPath = path.resolve(__dirname, '..', 'dist')
@@ -78,6 +85,38 @@ app.post('/api/kafka/validate', async (req, res) => {
       ? 'All bootstrap brokers reached successfully'
       : 'One or more brokers unreachable (is Docker or Kafka running?)'
   })
+})
+
+app.post('/api/kafka/topics', async (req, res) => {
+  const cluster = req.body?.cluster || req.body || {}
+  const result = await fetchKafkaTopics(cluster)
+  res.json(result)
+})
+
+app.post('/api/kafka/cluster-info', async (req, res) => {
+  const cluster = req.body?.cluster || req.body || {}
+  const result = await fetchKafkaClusterDetails(cluster)
+  res.json(result)
+})
+
+app.post('/api/kafka/create-topic', async (req, res) => {
+  const { cluster, topic, partitions, replicationFactor } = req.body || {}
+  if (!topic) return res.status(400).json({ ok: false, error: 'Topic name is required' })
+  const result = await createKafkaTopic(cluster, { name: topic, partitions, replicationFactor })
+  res.json(result)
+})
+
+app.post('/api/kafka/produce', async (req, res) => {
+  const { cluster, topic, key, value } = req.body || {}
+  if (!topic) return res.status(400).json({ ok: false, error: 'Topic name is required' })
+  const result = await produceKafkaMessage(cluster, { topic, key, value })
+  res.json(result)
+})
+
+app.post('/api/kafka/consumers', async (req, res) => {
+  const cluster = req.body?.cluster || req.body || {}
+  const result = await fetchKafkaConsumerGroups(cluster)
+  res.json(result)
 })
 
 app.get('*', (req, res, next) => {

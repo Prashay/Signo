@@ -30,9 +30,9 @@ export default function KafkaSidebar({
 
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-    { id: 'brokers', label: 'Broker Nodes', icon: Server, badge: activeCluster?.brokersCount || 1 },
-    { id: 'topics', label: 'Stream Topics', icon: Layers, badge: activeCluster?.topicsCount || 4 },
-    { id: 'consumers', label: 'Consumer Groups', icon: Users, badge: activeCluster?.consumersCount || 3 }
+    { id: 'brokers', label: 'Broker Nodes', icon: Server, badge: activeCluster?.brokersCount ?? 1 },
+    { id: 'topics', label: 'Stream Topics', icon: Layers, badge: activeCluster?.topicsCount ?? 0 },
+    { id: 'consumers', label: 'Consumer Groups', icon: Users, badge: activeCluster?.consumersCount ?? 0 }
   ]
 
   return (

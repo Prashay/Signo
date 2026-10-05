@@ -91,13 +91,44 @@ export default function KfkaxApp() {
     try {
       const res = await fetch(`/api/kafka/probe?host=${encodeURIComponent(host)}&port=${encodeURIComponent(port)}`)
       const data = await res.json()
+      
+      if (!data.online) {
+        return {
+          ...cluster,
+          status: 'offline',
+          latency: null,
+          probeError: data.error || `Connection refused on ${host}:${port} (broker not responding)`
+        }
+      }
+
+      // If broker port is reachable, query live Kafka admin metadata
+      try {
+        const infoRes = await fetch('/api/kafka/cluster-info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cluster })
+        })
+        const infoData = await infoRes.json()
+        if (infoData.ok) {
+          return {
+            ...cluster,
+            status: 'online',
+            latency: `${data.latency}ms`,
+            probeError: null,
+            topicsCount: infoData.topicsCount ?? cluster.topicsCount,
+            consumersCount: infoData.consumersCount ?? cluster.consumersCount,
+            brokersCount: infoData.brokers?.length ?? cluster.brokersCount,
+            brokersList: infoData.brokers?.length ? infoData.brokers : cluster.brokersList,
+            clusterId: infoData.clusterId || cluster.clusterId
+          }
+        }
+      } catch {}
+
       return {
         ...cluster,
-        status: data.online ? 'online' : 'offline',
-        latency: data.online ? `${data.latency}ms` : null,
-        probeError: data.online
-          ? null
-          : (data.error || `Connection refused on ${host}:${port} (Docker container not running)`)
+        status: 'online',
+        latency: `${data.latency}ms`,
+        probeError: null
       }
     } catch {
       return {
@@ -197,6 +228,13 @@ export default function KfkaxApp() {
     setTimeout(() => setSuccessNotice(''), 3000)
   }
 
+  const handleTopicsUpdated = useCallback((count) => {
+    if (!activeClusterId) return
+    setClusters((prev) =>
+      prev.map((c) => (c.id === activeClusterId ? { ...c, topicsCount: count } : c))
+    )
+  }, [activeClusterId])
+
   return (
     <div
       className={`flex h-full flex-col overflow-hidden transition-colors ${
@@ -278,7 +316,12 @@ export default function KfkaxApp() {
           />
         )}
 
-        {currentView === 'topics' && <KafkaTopicsView cluster={activeCluster} />}
+        {currentView === 'topics' && (
+          <KafkaTopicsView
+            cluster={activeCluster}
+            onTopicsUpdated={handleTopicsUpdated}
+          />
+        )}
 
         {currentView === 'consumers' && <KafkaConsumersView cluster={activeCluster} />}
       </div>

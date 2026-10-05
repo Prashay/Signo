@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Layers,
   Plus,
@@ -14,7 +14,8 @@ import {
   Database,
   Radio,
   ArrowUpRight,
-  Filter
+  Filter,
+  RefreshCw
 } from 'lucide-react'
 import { useThemeSettings } from '../../context/ThemeSettingsContext.jsx'
 
@@ -57,13 +58,16 @@ const DEFAULT_TOPICS = [
   }
 ]
 
-export default function KafkaTopicsView({ cluster }) {
+export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
   const { theme } = useThemeSettings()
   const isDark = theme === 'dark'
 
   const [topics, setTopics] = useState(DEFAULT_TOPICS)
   const [search, setSearch] = useState('')
   const [hideInternal, setHideInternal] = useState(false)
+  const [loadingTopics, setLoadingTopics] = useState(false)
+  const [fetchError, setFetchError] = useState(null)
+  const [isLive, setIsLive] = useState(false)
 
   // Modal states
   const [createModal, setCreateModal] = useState(false)
@@ -103,31 +107,127 @@ export default function KafkaTopicsView({ cluster }) {
     }
   ])
 
+  const loadTopics = useCallback(async () => {
+    if (!cluster) return
+    setLoadingTopics(true)
+    setFetchError(null)
+    try {
+      const res = await fetch('/api/kafka/topics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cluster })
+      })
+      const data = await res.json()
+      if (data.ok && Array.isArray(data.topics)) {
+        setTopics(data.topics)
+        setIsLive(true)
+        if (onTopicsUpdated) onTopicsUpdated(data.topics.length)
+        if (data.topics.length > 0) {
+          setProduceTopic(data.topics[0].name)
+        }
+      } else {
+        setIsLive(false)
+        setFetchError(data.error || 'Failed to fetch topics from broker')
+        if (cluster.id === 'cluster-local' || (!topics || topics.length === 0)) {
+          setTopics(DEFAULT_TOPICS)
+        }
+      }
+    } catch (err) {
+      setIsLive(false)
+      setFetchError(err.message || 'Unable to connect to Kafka API')
+      if (cluster.id === 'cluster-local' || (!topics || topics.length === 0)) {
+        setTopics(DEFAULT_TOPICS)
+      }
+    } finally {
+      setLoadingTopics(false)
+    }
+  }, [cluster, onTopicsUpdated])
+
+  useEffect(() => {
+    loadTopics()
+  }, [loadTopics])
+
   const filteredTopics = topics.filter((t) => {
     if (hideInternal && t.internal) return false
     if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
 
-  const handleCreateTopic = (e) => {
+  const handleCreateTopic = async (e) => {
     e.preventDefault()
-    if (!newTopicName.trim()) return
-    const topic = {
-      name: newTopicName.trim(),
-      partitions: Number(newPartitions) || 1,
-      replicationFactor: Number(newReplication) || 1,
-      messagesCount: 0,
-      size: '0 Bytes',
-      cleanUp: newCleanup,
-      internal: false
+    const name = newTopicName.trim()
+    if (!name) return
+
+    try {
+      const res = await fetch('/api/kafka/create-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cluster,
+          topic: name,
+          partitions: Number(newPartitions) || 1,
+          replicationFactor: Number(newReplication) || 1
+        })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        await loadTopics()
+      } else {
+        const topic = {
+          name,
+          partitions: Number(newPartitions) || 1,
+          replicationFactor: Number(newReplication) || 1,
+          messagesCount: 0,
+          size: '0 Bytes',
+          cleanUp: newCleanup,
+          internal: false
+        }
+        setTopics((prev) => [topic, ...prev])
+      }
+    } catch {
+      const topic = {
+        name,
+        partitions: Number(newPartitions) || 1,
+        replicationFactor: Number(newReplication) || 1,
+        messagesCount: 0,
+        size: '0 Bytes',
+        cleanUp: newCleanup,
+        internal: false
+      }
+      setTopics((prev) => [topic, ...prev])
     }
-    setTopics([topic, ...topics])
     setNewTopicName('')
     setCreateModal(false)
   }
 
-  const handleProduce = (e) => {
+  const handleProduce = async (e) => {
     e.preventDefault()
+    let parsedVal = produceValue
+    try {
+      parsedVal = JSON.parse(produceValue)
+    } catch {}
+
+    try {
+      const res = await fetch('/api/kafka/produce', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cluster,
+          topic: produceTopic,
+          key: produceKey,
+          value: parsedVal
+        })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setProduceStatus('Message published successfully to Kafka broker partition!')
+      } else {
+        setProduceStatus(`Published notice: ${data.error || 'Simulated locally'}`)
+      }
+    } catch {
+      setProduceStatus('Published to local stream inspector (cluster offline)')
+    }
+
     const msg = {
       offset: Math.floor(Math.random() * 5000) + 1000,
       partition: Math.floor(Math.random() * 3),
@@ -135,12 +235,11 @@ export default function KafkaTopicsView({ cluster }) {
       key: produceKey,
       value: produceValue
     }
-    setSimulatedMessages([msg, ...simulatedMessages])
-    setProduceStatus('Message published successfully to stream partition!')
+    setSimulatedMessages((prev) => [msg, ...prev])
     setTimeout(() => {
       setProduceStatus(null)
       setProduceModal(false)
-    }, 1000)
+    }, 1200)
   }
 
   return (
@@ -177,6 +276,21 @@ export default function KafkaTopicsView({ cluster }) {
         <div className="flex items-center gap-3">
           <button
             type="button"
+            onClick={loadTopics}
+            disabled={loadingTopics}
+            className={`flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-xs font-semibold transition-all shadow-sm ${
+              isDark
+                ? 'border-white/10 bg-white/[0.04] text-mist-300 hover:bg-white/[0.08] hover:text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+            title="Refresh topics from Kafka broker"
+          >
+            <RefreshCw size={14} className={loadingTopics ? 'animate-spin text-cyan-400' : ''} />
+            <span>{loadingTopics ? 'Fetching...' : 'Refresh'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setProduceModal(true)}
             className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold transition-all shadow-sm ${
               isDark
@@ -198,6 +312,50 @@ export default function KafkaTopicsView({ cluster }) {
           </button>
         </div>
       </div>
+
+      {/* Live connection or Error Banner */}
+      {isLive && (
+        <div
+          className={`mb-5 flex items-center justify-between rounded-xl border px-4 py-2.5 text-xs transition-colors ${
+            isDark
+              ? 'border-emerald-500/25 bg-emerald-950/40 text-emerald-300'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-semibold">Live Kafka Topics:</span>
+            <span>Retrieved {topics.length} topic{topics.length === 1 ? '' : 's'} directly from broker.</span>
+          </div>
+          <span className="font-mono text-[11px] opacity-75">{cluster?.bootstrapServers || cluster?.servers?.[0]?.host}</span>
+        </div>
+      )}
+
+      {fetchError && !isLive && (
+        <div
+          className={`mb-5 flex items-center justify-between rounded-xl border px-4 py-2.5 text-xs transition-colors ${
+            isDark
+              ? 'border-amber-500/30 bg-amber-950/40 text-amber-200'
+              : 'border-amber-200 bg-amber-50 text-amber-900'
+          }`}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertCircle size={15} className="text-amber-400 shrink-0" />
+            <div className="min-w-0 truncate">
+              <span className="font-semibold">Broker unreachable: </span>
+              <span className="font-mono text-[11px]">{fetchError}</span>
+              <span className="opacity-80"> (showing fallback topics)</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={loadTopics}
+            className="ml-3 shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold underline hover:no-underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Search & filters */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

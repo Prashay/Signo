@@ -654,7 +654,7 @@ export default function KafkaDashboard({
                       {cluster.partitions ?? 12}
                     </td>
                     <td className={`px-5 py-4 font-mono font-medium ${isDark ? 'text-indigo-300' : 'text-indigo-700 font-semibold'}`}>
-                      {cluster.topicsCount ?? 4}
+                      {cluster.topicsCount ?? 0}
                     </td>
                     <td className={`px-5 py-4 font-mono ${isDark ? 'text-mist-300' : 'text-slate-600'}`}>
                       {cluster.status === 'online' ? (cluster.production || '124.5 KB/s') : '0 Bytes'}
