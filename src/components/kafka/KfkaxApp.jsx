@@ -40,14 +40,49 @@ export default function KfkaxApp() {
   const { theme } = useThemeSettings()
   const isDark = theme === 'dark'
 
-  const [clusters, setClusters] = useState(INITIAL_CLUSTERS)
-  const [activeClusterId, setActiveClusterId] = useState('cluster-local')
+  const [clusters, setClusters] = useState(() => {
+    try {
+      const saved = localStorage.getItem('signo_kafka_clusters')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed
+        }
+      }
+    } catch {}
+    return INITIAL_CLUSTERS
+  })
+
+  const [activeClusterId, setActiveClusterId] = useState(() => {
+    try {
+      const savedId = localStorage.getItem('signo_kafka_active_cluster_id')
+      if (savedId) return savedId
+    } catch {}
+    return 'cluster-local'
+  })
+
   const [currentView, setCurrentView] = useState('dashboard') // 'dashboard' | 'config' | 'brokers' | 'topics' | 'consumers'
   const [editingCluster, setEditingCluster] = useState(null)
   const [successNotice, setSuccessNotice] = useState('')
   const [isProbing, setIsProbing] = useState(false)
 
   const activeCluster = clusters.find((c) => c.id === activeClusterId) || clusters[0] || null
+
+  // Save clusters to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('signo_kafka_clusters', JSON.stringify(clusters))
+    } catch {}
+  }, [clusters])
+
+  // Save active cluster ID to localStorage
+  useEffect(() => {
+    try {
+      if (activeClusterId) {
+        localStorage.setItem('signo_kafka_active_cluster_id', activeClusterId)
+      }
+    } catch {}
+  }, [activeClusterId])
 
   const probeSingleCluster = useCallback(async (cluster) => {
     if (!cluster) return null
@@ -85,9 +120,15 @@ export default function KfkaxApp() {
     }
   }, [clusters, probeSingleCluster])
 
-  // Probe on initial mount
+  // Probe on initial mount: probe ALL saved clusters, not just INITIAL_CLUSTERS
   useEffect(() => {
-    probeAllClusters(INITIAL_CLUSTERS)
+    try {
+      const saved = localStorage.getItem('signo_kafka_clusters')
+      const initialList = saved ? JSON.parse(saved) : INITIAL_CLUSTERS
+      probeAllClusters(initialList)
+    } catch {
+      probeAllClusters(INITIAL_CLUSTERS)
+    }
   }, [])
 
   const handleProbeCluster = async (targetCluster) => {
@@ -120,21 +161,40 @@ export default function KfkaxApp() {
     const toSave = probedCluster || savedCluster
 
     const exists = clusters.some((c) => c.id === toSave.id)
+    let nextList
     if (exists) {
-      setClusters((prev) => prev.map((c) => (c.id === toSave.id ? toSave : c)))
+      nextList = clusters.map((c) => (c.id === toSave.id ? toSave : c))
       setSuccessNotice(`Cluster "${toSave.name}" updated successfully.`)
     } else {
-      setClusters((prev) => [...prev, toSave])
+      nextList = [...clusters, toSave]
       setSuccessNotice(
         `Cluster "${toSave.name}" added (${toSave.status === 'online' ? 'Connected' : 'Offline / Standalone'}).`
       )
     }
+    setClusters(nextList)
+    try {
+      localStorage.setItem('signo_kafka_clusters', JSON.stringify(nextList))
+    } catch {}
     setActiveClusterId(toSave.id)
     setCurrentView('dashboard')
 
     setTimeout(() => {
       setSuccessNotice('')
     }, 4000)
+  }
+
+  const handleDeleteCluster = (clusterId) => {
+    const nextList = clusters.filter((c) => c.id !== clusterId)
+    const finalClusters = nextList.length > 0 ? nextList : INITIAL_CLUSTERS
+    setClusters(finalClusters)
+    try {
+      localStorage.setItem('signo_kafka_clusters', JSON.stringify(finalClusters))
+    } catch {}
+    if (activeClusterId === clusterId) {
+      setActiveClusterId(finalClusters[0]?.id || '')
+    }
+    setSuccessNotice('Cluster removed successfully.')
+    setTimeout(() => setSuccessNotice(''), 3000)
   }
 
   return (
@@ -194,6 +254,7 @@ export default function KfkaxApp() {
             onProbeAllClusters={() => probeAllClusters()}
             onOpenConfig={handleOpenNewConfig}
             onConfigureCluster={handleConfigureCluster}
+            onDeleteCluster={handleDeleteCluster}
             onSelectCluster={(c) => {
               setActiveClusterId(c.id)
               setCurrentView('brokers')

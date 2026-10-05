@@ -328,7 +328,7 @@ wss.on('connection', (socket) => {
         return
       }
       if (msg.topic) {
-        client.subscribe(msg.topic, { qos }, () => {})
+        client.subscribe(msg.topic, { qos }, () => { })
       }
       client.publish(msg.topic, payload, { qos, retain }, (err) => {
         send({

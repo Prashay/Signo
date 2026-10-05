@@ -16,7 +16,8 @@ import {
   Cpu,
   X,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from 'lucide-react'
 import { useThemeSettings } from '../../context/ThemeSettingsContext.jsx'
 
@@ -27,6 +28,7 @@ export default function KafkaDashboard({
   onProbeAllClusters,
   onOpenConfig,
   onConfigureCluster,
+  onDeleteCluster,
   onSelectCluster
 }) {
   const { theme } = useThemeSettings()
@@ -704,6 +706,25 @@ export default function KafkaDashboard({
                           <Sliders size={12} />
                           <span>Configure</span>
                         </button>
+
+                        {onDeleteCluster && cluster.id !== 'cluster-local' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to remove cluster "${cluster.name}"?`)) {
+                                onDeleteCluster(cluster.id)
+                              }
+                            }}
+                            title="Remove cluster"
+                            className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
+                              isDark
+                                ? 'border-rose-500/20 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:border-rose-500/40'
+                                : 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 shadow-2xs'
+                            }`}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

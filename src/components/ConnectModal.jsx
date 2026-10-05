@@ -124,40 +124,35 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
     setForm((f) => ({ ...f, subscriptions: f.subscriptions.filter((_, idx) => idx !== i) }))
   }
 
-  const inputClass = `w-full rounded-xl border px-3 py-2 text-xs outline-none transition-all ${
-    isDark
+  const inputClass = `w-full rounded-xl border px-3 py-2 text-xs outline-none transition-all ${isDark
       ? 'border-white/10 bg-white/[0.03] text-white focus:border-indigo-500/60 focus:bg-white/[0.05]'
       : 'border-slate-200 bg-white text-slate-900 shadow-2xs focus:border-indigo-500'
-  }`
+    }`
 
-  const selectClass = `w-full rounded-xl border px-3 py-2 text-xs outline-none transition-all ${
-    isDark
+  const selectClass = `w-full rounded-xl border px-3 py-2 text-xs outline-none transition-all ${isDark
       ? 'border-white/10 bg-[#0c0e18] text-white focus:border-indigo-500/60'
       : 'border-slate-200 bg-white text-slate-900 shadow-2xs focus:border-indigo-500'
-  }`
+    }`
 
   const hasCerts = Boolean(form.caCert || form.clientCert || form.clientKey)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md">
       <div
-        className={`max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border shadow-2xl transition-all ${
-          isDark
+        className={`max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border shadow-2xl transition-all ${isDark
             ? 'border-white/[0.08] bg-[#0c0e18] text-mist-100 shadow-indigo-950/40'
             : 'border-slate-200 bg-white text-slate-800 shadow-slate-300'
-        }`}
+          }`}
       >
         {/* Header */}
         <div
-          className={`flex items-center justify-between border-b px-6 py-4 ${
-            isDark ? 'border-white/[0.06] bg-white/[0.01]' : 'border-slate-200 bg-slate-50/70'
-          }`}
+          className={`flex items-center justify-between border-b px-6 py-4 ${isDark ? 'border-white/[0.06] bg-white/[0.01]' : 'border-slate-200 bg-slate-50/70'
+            }`}
         >
           <div className="flex items-center gap-2.5">
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-xl ${
-                isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
-              }`}
+              className={`flex h-8 w-8 items-center justify-center rounded-xl ${isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+                }`}
             >
               {view === 'advanced' ? <Shield size={16} /> : <PlugZap size={16} />}
             </div>
@@ -166,8 +161,8 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
                 {view === 'advanced'
                   ? 'Advanced TLS & Certificate Options'
                   : initial
-                  ? 'Edit MQTT Connection'
-                  : 'Add MQTT Connection'}
+                    ? 'Edit MQTT Connection'
+                    : 'Add MQTT Connection'}
               </h2>
               <p className={`text-[11px] ${isDark ? 'text-mist-400' : 'text-slate-500'}`}>
                 {view === 'advanced'
@@ -178,9 +173,8 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
           </div>
           <button
             onClick={onClose}
-            className={`rounded-xl p-1.5 transition-colors ${
-              isDark ? 'text-mist-400 hover:text-white hover:bg-white/5' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
-            }`}
+            className={`rounded-xl p-1.5 transition-colors ${isDark ? 'text-mist-400 hover:text-white hover:bg-white/5' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+              }`}
           >
             <X size={16} />
           </button>
@@ -194,18 +188,16 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
           <div className="p-6 space-y-5">
             {/* Top Navigation Bar with Back Button */}
             <div
-              className={`flex items-center justify-between pb-3 border-b ${
-                isDark ? 'border-white/[0.06]' : 'border-slate-200'
-              }`}
+              className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-white/[0.06]' : 'border-slate-200'
+                }`}
             >
               <button
                 type="button"
                 onClick={() => setView('general')}
-                className={`flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-                  isDark
+                className={`flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${isDark
                     ? 'border-white/10 bg-white/[0.03] text-mist-200 hover:bg-white/[0.08] hover:text-white'
                     : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
-                }`}
+                  }`}
               >
                 <ArrowLeft size={14} />
                 <span>Back to Connection Settings</span>
@@ -213,15 +205,14 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
 
               <div className="flex items-center gap-2">
                 <span
-                  className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono font-medium border ${
-                    form.tls
+                  className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono font-medium border ${form.tls
                       ? isDark
                         ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
                         : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                       : isDark
-                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                      : 'border-amber-200 bg-amber-50 text-amber-800'
-                  }`}
+                        ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                        : 'border-amber-200 bg-amber-50 text-amber-800'
+                    }`}
                 >
                   <Lock size={10} />
                   <span>{form.tls ? 'TLS Enabled' : 'Plaintext Mode'}</span>
@@ -231,9 +222,8 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
 
             {/* 1. CA Server Certificate */}
             <div
-              className={`rounded-2xl border p-4 transition-colors ${
-                isDark ? 'border-white/[0.06] bg-white/[0.01]' : 'border-slate-200 bg-slate-50/50'
-              }`}
+              className={`rounded-2xl border p-4 transition-colors ${isDark ? 'border-white/[0.06] bg-white/[0.01]' : 'border-slate-200 bg-slate-50/50'
+                }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <label className={`text-xs font-semibold flex items-center gap-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -267,11 +257,10 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
                 value={form.caCert || ''}
                 onChange={(e) => set('caCert', e.target.value)}
                 placeholder="-----BEGIN CERTIFICATE-----&#10;MIIDXTCCAkWgAwIBAgIJAP...&#10;-----END CERTIFICATE-----"
-                className={`w-full font-mono text-xs rounded-xl border p-3 outline-none transition-all leading-relaxed ${
-                  isDark
+                className={`w-full font-mono text-xs rounded-xl border p-3 outline-none transition-all leading-relaxed ${isDark
                     ? 'border-white/10 bg-[#070a14] text-cyan-300 placeholder-mist-600 focus:border-indigo-500'
                     : 'border-slate-300 bg-white text-slate-800 placeholder-slate-400 shadow-2xs focus:border-indigo-500'
-                }`}
+                  }`}
               />
               <p className={`mt-1 text-[11px] ${isDark ? 'text-mist-500' : 'text-slate-500'}`}>
                 Custom Root Certificate Authority to verify self-signed or private enterprise MQTT brokers.
@@ -280,9 +269,8 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
 
             {/* 2. Client Certificate */}
             <div
-              className={`rounded-2xl border p-4 transition-colors ${
-                isDark ? 'border-white/[0.06] bg-white/[0.01]' : 'border-slate-200 bg-slate-50/50'
-              }`}
+              className={`rounded-2xl border p-4 transition-colors ${isDark ? 'border-white/[0.06] bg-white/[0.01]' : 'border-slate-200 bg-slate-50/50'
+                }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <label className={`text-xs font-semibold flex items-center gap-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -316,11 +304,10 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
                 value={form.clientCert || ''}
                 onChange={(e) => set('clientCert', e.target.value)}
                 placeholder="-----BEGIN CERTIFICATE-----&#10;MIICrDCCAZSgAwIBAg...&#10;-----END CERTIFICATE-----"
-                className={`w-full font-mono text-xs rounded-xl border p-3 outline-none transition-all leading-relaxed ${
-                  isDark
+                className={`w-full font-mono text-xs rounded-xl border p-3 outline-none transition-all leading-relaxed ${isDark
                     ? 'border-white/10 bg-[#070a14] text-emerald-300 placeholder-mist-600 focus:border-indigo-500'
                     : 'border-slate-300 bg-white text-slate-800 placeholder-slate-400 shadow-2xs focus:border-indigo-500'
-                }`}
+                  }`}
               />
               <p className={`mt-1 text-[11px] ${isDark ? 'text-mist-500' : 'text-slate-500'}`}>
                 Client public certificate passed to the broker for mutual TLS (mTLS) authentication.
@@ -329,9 +316,8 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
 
             {/* 3. Client Key */}
             <div
-              className={`rounded-2xl border p-4 transition-colors ${
-                isDark ? 'border-white/[0.06] bg-white/[0.01]' : 'border-slate-200 bg-slate-50/50'
-              }`}
+              className={`rounded-2xl border p-4 transition-colors ${isDark ? 'border-white/[0.06] bg-white/[0.01]' : 'border-slate-200 bg-slate-50/50'
+                }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <label className={`text-xs font-semibold flex items-center gap-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -365,11 +351,10 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
                 value={form.clientKey || ''}
                 onChange={(e) => set('clientKey', e.target.value)}
                 placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;MIIEowIBAAKCAQEA...&#10;-----END RSA PRIVATE KEY-----"
-                className={`w-full font-mono text-xs rounded-xl border p-3 outline-none transition-all leading-relaxed ${
-                  isDark
+                className={`w-full font-mono text-xs rounded-xl border p-3 outline-none transition-all leading-relaxed ${isDark
                     ? 'border-white/10 bg-[#070a14] text-purple-300 placeholder-mist-600 focus:border-indigo-500'
                     : 'border-slate-300 bg-white text-slate-800 placeholder-slate-400 shadow-2xs focus:border-indigo-500'
-                }`}
+                  }`}
               />
               <p className={`mt-1 text-[11px] ${isDark ? 'text-mist-500' : 'text-slate-500'}`}>
                 Private cryptographic key corresponding to the client certificate.
@@ -405,11 +390,10 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
                     key={p.name}
                     type="button"
                     onClick={() => applyPreset(p)}
-                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
-                      isDark
+                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${isDark
                         ? 'border-white/10 bg-white/[0.02] text-mist-300 hover:border-indigo-500/40 hover:bg-indigo-500/10 hover:text-white'
                         : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50/70 hover:text-indigo-900 shadow-2xs'
-                    }`}
+                      }`}
                   >
                     {p.name}
                   </button>
@@ -503,9 +487,8 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
 
             {/* Security, TLS & Certificate Options Bar */}
             <div
-              className={`flex flex-wrap items-center justify-between gap-4 px-6 pb-4 pt-2 border-t ${
-                isDark ? 'border-white/[0.04]' : 'border-slate-100'
-              }`}
+              className={`flex flex-wrap items-center justify-between gap-4 px-6 pb-4 pt-2 border-t ${isDark ? 'border-white/[0.04]' : 'border-slate-100'
+                }`}
             >
               <div className="flex flex-wrap items-center gap-5 text-xs">
                 {/* 1. Encryption (TLS) Checkbox */}
@@ -571,15 +554,14 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
               <button
                 type="button"
                 onClick={() => setView('advanced')}
-                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
-                  hasCerts
+                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${hasCerts
                     ? isDark
                       ? 'border-indigo-500/50 bg-indigo-500/20 text-indigo-200'
                       : 'border-indigo-300 bg-indigo-50 text-indigo-700'
                     : isDark
-                    ? 'border-white/10 bg-white/[0.03] text-mist-300 hover:border-indigo-500/40 hover:bg-white/[0.08] hover:text-white'
-                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
-                }`}
+                      ? 'border-white/10 bg-white/[0.03] text-mist-300 hover:border-indigo-500/40 hover:bg-white/[0.08] hover:text-white'
+                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
+                  }`}
                 title="Add custom CA server certificate, client certificate, and client key"
               >
                 <Shield size={13} className={hasCerts ? 'text-indigo-400' : ''} />
@@ -600,11 +582,10 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
                 {(form.subscriptions || []).map((s, i) => (
                   <span
                     key={`${s.topic}-${i}`}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] ${
-                      isDark
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] ${isDark
                         ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300'
                         : 'border-indigo-200 bg-indigo-50 text-indigo-800'
-                    }`}
+                      }`}
                   >
                     <span>{s.topic} (QoS {s.qos})</span>
                     <button
@@ -633,11 +614,10 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
                 <button
                   type="button"
                   onClick={addSub}
-                  className={`flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${
-                    isDark
+                  className={`flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${isDark
                       ? 'border-white/10 bg-white/5 hover:bg-white/10 text-white'
                       : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800 shadow-2xs'
-                  }`}
+                    }`}
                 >
                   <Plus size={12} /> Add
                 </button>
@@ -648,19 +628,17 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
 
         {/* Modal Footer */}
         <div
-          className={`flex items-center justify-between border-t px-6 py-4 ${
-            isDark ? 'border-white/[0.06] bg-[#090b12]' : 'border-slate-200 bg-slate-50'
-          }`}
+          className={`flex items-center justify-between border-t px-6 py-4 ${isDark ? 'border-white/[0.06] bg-[#090b12]' : 'border-slate-200 bg-slate-50'
+            }`}
         >
           {view === 'advanced' ? (
             <button
               type="button"
               onClick={() => setView('general')}
-              className={`flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-semibold transition-colors cursor-pointer ${
-                isDark
+              className={`flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-semibold transition-colors cursor-pointer ${isDark
                   ? 'border-white/10 bg-white/[0.03] text-mist-200 hover:bg-white/[0.08] hover:text-white'
                   : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 shadow-2xs'
-              }`}
+                }`}
             >
               <ArrowLeft size={13} />
               <span>Back</span>
@@ -673,9 +651,8 @@ export default function ConnectModal({ open, initial, onClose, onSave }) {
             <button
               type="button"
               onClick={onClose}
-              className={`rounded-xl px-4 py-2 text-xs font-semibold transition-colors cursor-pointer ${
-                isDark ? 'text-mist-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'
-              }`}
+              className={`rounded-xl px-4 py-2 text-xs font-semibold transition-colors cursor-pointer ${isDark ? 'text-mist-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'
+                }`}
             >
               Cancel
             </button>
