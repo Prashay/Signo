@@ -3,27 +3,37 @@
   "productName": "Signo Studio",
   "copyright": "Copyright © 2026 Signo Platform",
   "directories": {
-    "output": "release"
+    "output": "release",
+    "buildResources": "build"
   },
+  "icon": "build/icon.png",
   "files": [
     "dist/**/*",
     "server/**/*",
     "electron/**/*",
+    "build/**/*",
     "package.json"
   ],
   "win": {
+    "icon": "build/icon.png",
     "target": [
       {
         "target": "nsis",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       },
       {
         "target": "portable",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       },
       {
         "target": "zip",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       }
     ]
   },
@@ -34,23 +44,53 @@
     "createStartMenuShortcut": true
   },
   "mac": {
+    "icon": "build/icon.png",
     "category": "public.app-category.developer-tools",
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
     "target": [
       {
         "target": "dmg",
-        "arch": ["x64", "arm64"]
+        "arch": [
+          "x64",
+          "arm64"
+        ]
       },
       {
         "target": "zip",
-        "arch": ["x64", "arm64"]
+        "arch": [
+          "x64",
+          "arm64"
+        ]
       }
     ]
   },
+  "dmg": {
+    "contents": [
+      {
+        "x": 130,
+        "y": 220
+      },
+      {
+        "x": 410,
+        "y": 220,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ],
+    "window": {
+      "width": 540,
+      "height": 380
+    }
+  },
   "linux": {
+    "icon": "build/icon.png",
     "target": [
       {
         "target": "AppImage",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       }
     ],
     "category": "Development"

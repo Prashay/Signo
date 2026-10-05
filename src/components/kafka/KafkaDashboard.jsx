@@ -582,6 +582,32 @@ export default function KafkaDashboard({
                                 ? 'Checking...'
                                 : 'Offline (Docker stopped)'}
                             </span>
+                            {cluster.environment && (
+                              <span
+                                className={`rounded px-1.5 py-0.2 text-[9px] uppercase font-mono font-bold tracking-wider border ${
+                                  cluster.environment === 'prod'
+                                    ? isDark ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-rose-50 text-rose-700 border-rose-200'
+                                    : cluster.environment === 'stage'
+                                    ? isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-800 border-amber-200'
+                                    : cluster.environment === 'dev'
+                                    ? isDark ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-cyan-50 text-cyan-700 border-cyan-200'
+                                    : isDark ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-purple-50 text-purple-700 border-purple-200'
+                                }`}
+                              >
+                                {cluster.environment}
+                              </span>
+                            )}
+                            {cluster.securityProtocol && cluster.securityProtocol !== 'PLAINTEXT' && (
+                              <span
+                                className={`rounded px-1.5 py-0.2 text-[9px] font-mono font-semibold border ${
+                                  isDark
+                                    ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                                    : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                }`}
+                              >
+                                {cluster.securityProtocol}
+                              </span>
+                            )}
                             {cluster.readOnly && (
                               <span
                                 className={`rounded px-1.5 py-0.2 text-[10px] border ${

@@ -15,10 +15,11 @@
     "preview": "vite preview --host 0.0.0.0 --port 7200",
     "electron:start": "electron .",
     "electron:dev": "concurrently -k -n server,client,electron -c cyan,magenta,yellow \"npm run server\" \"npm run client\" \"electron .\"",
+    "build:icons": "node scripts/generate-icons.cjs",
     "electron:pack": "npm run build && electron-builder --dir",
-    "electron:dist": "npm run build && electron-builder",
-    "electron:dist:win": "npm run build && electron-builder --win",
-    "electron:dist:mac": "npm run build && electron-builder --mac"
+    "electron:dist": "npm run build:icons && npm run build && electron-builder",
+    "electron:dist:win": "npm run build:icons && npm run build && electron-builder --win",
+    "electron:dist:mac": "npm run build:icons && npm run build && electron-builder --mac"
   },
   "dependencies": {
     "cors": "^2.8.5",

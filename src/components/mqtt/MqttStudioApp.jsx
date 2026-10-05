@@ -12,12 +12,14 @@ import {
   Plus,
   Plug,
   Radio,
+  Search,
   Send,
   Sparkles,
   Terminal,
   Trash2,
   Wifi,
   WifiOff,
+  X,
   Zap
 } from 'lucide-react'
 import TopicTree from '../TopicTree.jsx'
@@ -25,7 +27,6 @@ import PayloadView from '../PayloadView.jsx'
 import PublishPanel from '../PublishPanel.jsx'
 import ConnectModal from '../ConnectModal.jsx'
 import SubscribeBar from '../SubscribeBar.jsx'
-import LoadTest from '../LoadTest.jsx'
 import ConnectionList from '../ConnectionList.jsx'
 import BridgeStatusModal from './BridgeStatusModal.jsx'
 import {
@@ -629,29 +630,35 @@ export default function MqttStudioApp({ onRateChange }) {
             <span className="hidden sm:inline">Clear</span>
           </button>
 
-          {/* Store 6339 Demo Toggle */}
-          {demoRunning ? (
-            <button
-              onClick={() => active && stopDemo(active.id)}
-              className="flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/20 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/30 shadow-xs transition-all"
-            >
-              <WifiOff size={12} className="animate-spin" />
-              <span>Stop Demo</span>
-            </button>
-          ) : (
-            <button
-              onClick={runDemo}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all ${
+          {/* Filter by Topic Search Input */}
+          <div className="relative flex items-center">
+            <Search
+              size={13}
+              className={`pointer-events-none absolute left-2.5 ${isDark ? 'text-mist-400' : 'text-slate-400'}`}
+            />
+            <input
+              type="text"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Filter by topic..."
+              className={`h-8 w-36 sm:w-56 rounded-lg border pl-8 pr-7 text-xs font-mono outline-none transition-all ${
                 isDark
-                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 shadow-xs'
-                  : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 shadow-2xs'
+                  ? 'border-white/10 bg-white/[0.04] text-white placeholder-mist-500 focus:border-indigo-500 focus:w-64 focus:bg-white/[0.08]'
+                  : 'border-slate-300 bg-white text-slate-800 placeholder-slate-400 shadow-2xs focus:border-indigo-500 focus:w-64'
               }`}
-              title="Spawn simulated Store 6339 telemetry load stream"
-            >
-              <Zap size={12} className="text-amber-400" />
-              <span className="hidden sm:inline">Store Demo</span>
-            </button>
-          )}
+              title="Filter discovered topic tree by name or pattern"
+            />
+            {filter && (
+              <button
+                type="button"
+                onClick={() => setFilter('')}
+                className="absolute right-2 text-mist-400 hover:text-white transition-colors"
+                title="Clear topic filter"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
 
           {/* New Broker */}
           <button
@@ -770,27 +777,7 @@ export default function MqttStudioApp({ onRateChange }) {
               <span>Publish</span>
             </button>
 
-            <button
-              onClick={() => setActiveStudioTab('load')}
-              className={`relative flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
-                activeStudioTab === 'load'
-                  ? isDark
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-white text-indigo-700 shadow-2xs border border-slate-200'
-                  : isDark
-                  ? 'text-mist-400 hover:text-white hover:bg-white/[0.04]'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Zap size={12} />
-              <span>Load Gen</span>
-              {(active?.loadRunning || demoRunning) && (
-                <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-                </span>
-              )}
-            </button>
+
 
             <button
               onClick={() => setActiveStudioTab('events')}
@@ -855,36 +842,6 @@ export default function MqttStudioApp({ onRateChange }) {
               />
             )}
 
-            {activeStudioTab === 'load' && (
-              <div className="p-1">
-                <LoadTest
-                  connected={connected}
-                  running={demoRunning || Boolean(active?.loadRunning)}
-                  onStart={(cfg) => {
-                    if (!active) return
-                    startLocalLoad(active.id, cfg.store, cfg.rate, cfg.topics)
-                    if (bridge === 'ready') {
-                      send({ type: 'subscribe', id: active.id, topic: `store/${cfg.store}/#`, qos: 0 })
-                      send({
-                        type: 'loadtest',
-                        id: active.id,
-                        action: 'start',
-                        store: cfg.store,
-                        rate: cfg.rate,
-                        topics: cfg.topics
-                      })
-                    } else {
-                      subscribeBrowserMqtt(active.id, `store/${cfg.store}/#`, 0)
-                      startBrowserLoad(active.id, cfg, {
-                        onMessage: (msg) => ingest(active.id, msg),
-                        onLoadStatus: ({ running }) => update(active.id, { loadRunning: running })
-                      })
-                    }
-                  }}
-                  onStop={() => active && stopDemo(active.id)}
-                />
-              </div>
-            )}
 
             {activeStudioTab === 'events' && (
               <div className="flex flex-col h-full min-h-0">

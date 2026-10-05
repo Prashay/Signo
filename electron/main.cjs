@@ -88,6 +88,8 @@ function startBackendServer() {
 }
 
 function createWindow() {
+  const iconPath = path.join(__dirname, '..', 'build', 'icon.png')
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -95,6 +97,7 @@ function createWindow() {
     minHeight: 680,
     backgroundColor: '#07090d',
     title: 'Signo Studio',
+    icon: iconPath,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     trafficLightPosition: { x: 16, y: 16 },
     autoHideMenuBar: true,
@@ -155,6 +158,16 @@ ipcMain.handle('window:isMaximized', () => {
 })
 
 app.whenReady().then(async () => {
+  // Set macOS Dock icon explicitly
+  if (process.platform === 'darwin' && app.dock) {
+    const iconPath = path.join(__dirname, '..', 'build', 'icon.png')
+    try {
+      app.dock.setIcon(iconPath)
+    } catch (err) {
+      console.error('[Electron] Failed to set dock icon:', err)
+    }
+  }
+
   await startBackendServer()
   createWindow()
 

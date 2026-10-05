@@ -101,6 +101,32 @@ export default function KafkaHeader({
           )}
 
           <span className="font-semibold">{activeCluster?.name || 'local'}</span>
+          {activeCluster?.environment && (
+            <span
+              className={`rounded px-1.5 py-0.2 font-mono text-[9px] uppercase font-bold tracking-wider border ${
+                activeCluster.environment === 'prod'
+                  ? isDark ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-rose-50 text-rose-700 border-rose-200'
+                  : activeCluster.environment === 'stage'
+                  ? isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-800 border-amber-200'
+                  : activeCluster.environment === 'dev'
+                  ? isDark ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-cyan-50 text-cyan-700 border-cyan-200'
+                  : isDark ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-purple-50 text-purple-700 border-purple-200'
+              }`}
+            >
+              {activeCluster.environment}
+            </span>
+          )}
+          {activeCluster?.securityProtocol && activeCluster.securityProtocol !== 'PLAINTEXT' && (
+            <span
+              className={`rounded px-1.5 py-0.2 font-mono text-[9px] font-semibold border ${
+                isDark
+                  ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                  : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+              }`}
+            >
+              {activeCluster.securityProtocol}
+            </span>
+          )}
           <span className={isDark ? 'text-white/20' : 'text-slate-300'}>|</span>
           <span
             className={`font-mono text-[11px] font-medium ${

@@ -35,7 +35,17 @@ export default function KafkaClusterConfig({
   // Core Identity
   const [clusterName, setClusterName] = useState(initialCluster?.name || 'local')
   const [readOnly, setReadOnly] = useState(initialCluster?.readOnly || false)
-  const [environment, setEnvironment] = useState('Local Dev')
+
+  const normalizeEnv = (env) => {
+    if (!env) return 'local'
+    const low = String(env).toLowerCase().trim()
+    if (low === 'local dev' || low === 'local') return 'local'
+    if (low === 'dev' || low === 'development') return 'dev'
+    if (low === 'stage' || low === 'staging') return 'stage'
+    if (low === 'prod' || low === 'production') return 'prod'
+    return low
+  }
+  const [environment, setEnvironment] = useState(normalizeEnv(initialCluster?.environment))
 
   // Bootstrap nodes: default to localhost:8080 as requested
   const [bootstrapServers, setBootstrapServers] = useState(() => {
@@ -51,9 +61,38 @@ export default function KafkaClusterConfig({
   const [truststorePassword, setTruststorePassword] = useState(initialCluster?.truststore?.password || '')
 
   const [hasAuth, setHasAuth] = useState(Boolean(initialCluster?.auth))
-  const [authMethod, setAuthMethod] = useState(initialCluster?.auth?.method || '')
+  const [securityProtocol, setSecurityProtocol] = useState(
+    initialCluster?.securityProtocol || initialCluster?.auth?.securityProtocol || 'SASL_SSL'
+  )
+  const [authMethod, setAuthMethod] = useState(
+    initialCluster?.auth?.method || 'SASL/JAAS'
+  )
+  const [saslMechanism, setSaslMechanism] = useState(
+    initialCluster?.auth?.saslMechanism || 'SCRAM-SHA-512'
+  )
+  const [saslJaasConfig, setSaslJaasConfig] = useState(
+    initialCluster?.auth?.saslJaasConfig || ''
+  )
   const [authUsername, setAuthUsername] = useState(initialCluster?.auth?.username || '')
   const [authPassword, setAuthPassword] = useState(initialCluster?.auth?.password || '')
+
+  const generateJaasSnippet = (mech = saslMechanism, user = authUsername, pass = authPassword) => {
+    const u = user.trim() || 'your_username'
+    const p = pass ? pass : 'your_password'
+    if (mech === 'SCRAM-SHA-512' || mech === 'SCRAM-SHA-256') {
+      return `org.apache.kafka.common.security.scram.ScramLoginModule required\n  username="${u}"\n  password="${p}";`
+    }
+    if (mech === 'PLAIN') {
+      return `org.apache.kafka.common.security.plain.PlainLoginModule required\n  username="${u}"\n  password="${p}";`
+    }
+    if (mech === 'OAUTHBEARER') {
+      return `org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required;`
+    }
+    if (mech === 'GSSAPI') {
+      return `com.sun.security.auth.module.Krb5LoginModule required\n  useKeyTab=true\n  storeKey=true\n  keyTab="/etc/security/keytabs/kafka.keytab"\n  principal="kafka/localhost@EXAMPLE.COM";`
+    }
+    return `org.apache.kafka.common.security.scram.ScramLoginModule required\n  username="${u}"\n  password="${p}";`
+  }
 
   const [hasSchemaRegistry, setHasSchemaRegistry] = useState(Boolean(initialCluster?.schemaRegistry))
   const [schemaRegistryUrl, setSchemaRegistryUrl] = useState(initialCluster?.schemaRegistry?.url || 'http://localhost:8081')
@@ -99,9 +138,16 @@ export default function KafkaClusterConfig({
   const handleReset = () => {
     setClusterName('')
     setReadOnly(false)
+    setEnvironment('local')
     setBootstrapServers([{ host: 'localhost', port: '8080' }])
     setHasTruststore(false)
     setHasAuth(false)
+    setSecurityProtocol('SASL_SSL')
+    setAuthMethod('SASL/JAAS')
+    setSaslMechanism('SCRAM-SHA-512')
+    setSaslJaasConfig('')
+    setAuthUsername('')
+    setAuthPassword('')
     setHasSchemaRegistry(false)
     setHasKafkaConnect(false)
     setHasKsql(false)
@@ -132,11 +178,14 @@ export default function KafkaClusterConfig({
       return
     }
 
+    const finalJaas = saslJaasConfig.trim() || (hasAuth && authMethod === 'SASL/JAAS' ? generateJaasSnippet() : '')
+
     const newCluster = {
       id: initialCluster?.id || `cluster-${Date.now()}`,
       name: clusterName.trim(),
       readOnly,
       environment,
+      securityProtocol: hasAuth ? securityProtocol : (initialCluster?.securityProtocol || 'PLAINTEXT'),
       version: '3.5-IV2',
       status: 'online',
       brokersCount: bootstrapServers.length,
@@ -148,7 +197,14 @@ export default function KafkaClusterConfig({
       servers: bootstrapServers,
       bootstrapServers: bootstrapServers.map((s) => `${s.host}:${s.port}`).join(', '),
       truststore: hasTruststore ? { location: truststoreLocation, password: truststorePassword } : null,
-      auth: hasAuth ? { method: authMethod, username: authUsername, password: authPassword } : null,
+      auth: hasAuth ? {
+        method: authMethod,
+        securityProtocol,
+        saslMechanism,
+        saslJaasConfig: finalJaas,
+        username: authUsername,
+        password: authPassword
+      } : null,
       schemaRegistry: hasSchemaRegistry
         ? { url: schemaRegistryUrl, auth: schemaRegistryAuth, keystoreLoc: schemaKeystoreLoc, keystorePass: schemaKeystorePass }
         : null,
@@ -307,9 +363,10 @@ export default function KafkaClusterConfig({
                     : 'border-slate-300 bg-white text-slate-900 shadow-xs focus:border-indigo-500'
                 }`}
               >
-                <option value="Local Dev">Local Dev</option>
-                <option value="Staging">Staging</option>
-                <option value="Production">Production</option>
+                <option value="local">local</option>
+                <option value="dev">dev</option>
+                <option value="stage">stage</option>
+                <option value="prod">prod</option>
               </select>
             </div>
           </div>
@@ -556,7 +613,7 @@ export default function KafkaClusterConfig({
                     Client Authentication
                   </div>
                   <div className={`text-[11px] ${isDark ? 'text-mist-400' : 'text-slate-500'}`}>
-                    SASL, OAuth2, or mutual TLS credentials
+                    SASL/JAAS, SCRAM-SHA-512, SASL_SSL, OAuth2, or mTLS credentials
                   </div>
                 </div>
               </div>
@@ -580,39 +637,142 @@ export default function KafkaClusterConfig({
 
             {hasAuth && (
               <div className={`mt-4 space-y-4 border-t pt-4 ${isDark ? 'border-white/[0.06]' : 'border-slate-100'}`}>
-                <div>
-                  <label className={`block text-[11px] mb-1.5 ${isDark ? 'text-mist-400' : 'text-slate-600 font-medium'}`}>
-                    Authentication Protocol
-                  </label>
-                  <select
-                    value={authMethod}
-                    onChange={(e) => setAuthMethod(e.target.value)}
-                    className={`w-full rounded-xl border px-3.5 py-2 text-xs outline-none transition-all ${
-                      isDark
-                        ? 'border-white/10 bg-[#121524] text-white focus:border-indigo-500'
-                        : 'border-slate-300 bg-white text-slate-900 shadow-xs focus:border-indigo-500'
-                    }`}
-                  >
-                    <option value="">Select authentication protocol</option>
-                    <option value="SASL_PLAIN">SASL/PLAIN</option>
-                    <option value="SASL_SCRAM_256">SASL/SCRAM-256</option>
-                    <option value="SASL_SCRAM_512">SASL/SCRAM-512</option>
-                    <option value="OAUTHBEARER">OAuthBearer / OIDC Token</option>
-                    <option value="SSL">SSL Mutual (mTLS)</option>
-                    <option value="GSSAPI">Kerberos (GSSAPI)</option>
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Security Protocol */}
+                  <div>
+                    <label className={`block text-[11px] mb-1.5 font-mono ${isDark ? 'text-mist-300' : 'text-slate-700 font-medium'}`}>
+                      security.protocol
+                    </label>
+                    <select
+                      value={securityProtocol}
+                      onChange={(e) => setSecurityProtocol(e.target.value)}
+                      className={`w-full rounded-xl border px-3.5 py-2 text-xs outline-none transition-all font-mono ${
+                        isDark
+                          ? 'border-white/10 bg-[#121524] text-white focus:border-indigo-500'
+                          : 'border-slate-300 bg-white text-slate-900 shadow-xs focus:border-indigo-500'
+                      }`}
+                    >
+                      <option value="SASL_SSL">SASL_SSL (Encrypted SASL)</option>
+                      <option value="SASL_PLAINTEXT">SASL_PLAINTEXT</option>
+                      <option value="SSL">SSL Mutual (mTLS)</option>
+                      <option value="PLAINTEXT">PLAINTEXT (Unauthenticated)</option>
+                    </select>
+                  </div>
+
+                  {/* Authentication Method */}
+                  <div>
+                    <label className={`block text-[11px] mb-1.5 ${isDark ? 'text-mist-400' : 'text-slate-600 font-medium'}`}>
+                      Authentication Method
+                    </label>
+                    <select
+                      value={authMethod}
+                      onChange={(e) => {
+                        const m = e.target.value
+                        setAuthMethod(m)
+                        if (m === 'SASL/JAAS' && !saslJaasConfig) {
+                          setSaslJaasConfig(generateJaasSnippet(saslMechanism))
+                        }
+                      }}
+                      className={`w-full rounded-xl border px-3.5 py-2 text-xs outline-none transition-all ${
+                        isDark
+                          ? 'border-white/10 bg-[#121524] text-white focus:border-indigo-500'
+                          : 'border-slate-300 bg-white text-slate-900 shadow-xs focus:border-indigo-500'
+                      }`}
+                    >
+                      <option value="SASL/JAAS">SASL/JAAS (Recommended)</option>
+                      <option value="SASL_SCRAM_512">SASL/SCRAM-512</option>
+                      <option value="SASL_SCRAM_256">SASL/SCRAM-256</option>
+                      <option value="SASL_PLAIN">SASL/PLAIN</option>
+                      <option value="OAUTHBEARER">OAuthBearer / OIDC Token</option>
+                      <option value="SSL">SSL Mutual (mTLS)</option>
+                      <option value="GSSAPI">Kerberos (GSSAPI)</option>
+                    </select>
+                  </div>
                 </div>
 
-                {authMethod && authMethod !== 'SSL' && (
+                {/* SASL Mechanism (sasl.mechanism) */}
+                {(authMethod === 'SASL/JAAS' || authMethod.startsWith('SASL') || securityProtocol.startsWith('SASL')) && (
+                  <div>
+                    <label className={`block text-[11px] mb-1.5 font-mono ${isDark ? 'text-mist-300' : 'text-slate-700 font-medium'}`}>
+                      sasl.mechanism
+                    </label>
+                    <select
+                      value={saslMechanism}
+                      onChange={(e) => {
+                        const nextMech = e.target.value
+                        setSaslMechanism(nextMech)
+                        // If saslJaasConfig is empty or default, update it with the new mechanism
+                        if (!saslJaasConfig || saslJaasConfig.includes('LoginModule')) {
+                          setSaslJaasConfig(generateJaasSnippet(nextMech))
+                        }
+                      }}
+                      className={`w-full rounded-xl border px-3.5 py-2 text-xs outline-none transition-all font-mono ${
+                        isDark
+                          ? 'border-white/10 bg-[#121524] text-cyan-300 focus:border-indigo-500'
+                          : 'border-slate-300 bg-white text-indigo-700 shadow-xs focus:border-indigo-500'
+                      }`}
+                    >
+                      <option value="SCRAM-SHA-512">SCRAM-SHA-512 (High Security)</option>
+                      <option value="SCRAM-SHA-256">SCRAM-SHA-256</option>
+                      <option value="PLAIN">PLAIN</option>
+                      <option value="OAUTHBEARER">OAUTHBEARER</option>
+                      <option value="GSSAPI">GSSAPI (Kerberos)</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* sasl.jaas.config Input Box */}
+                {(authMethod === 'SASL/JAAS' || authMethod.startsWith('SASL') || securityProtocol.startsWith('SASL')) && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className={`text-[11px] font-mono font-medium ${isDark ? 'text-mist-300' : 'text-slate-700'}`}>
+                        sasl.jaas.config
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setSaslJaasConfig(generateJaasSnippet())}
+                        className={`text-[10px] font-mono cursor-pointer transition-colors ${
+                          isDark ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700 font-semibold'
+                        }`}
+                        title="Generate JAAS config from selected mechanism & credentials"
+                      >
+                        Auto-fill / Sync Template ↻
+                      </button>
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={saslJaasConfig}
+                      onChange={(e) => setSaslJaasConfig(e.target.value)}
+                      placeholder={'org.apache.kafka.common.security.scram.ScramLoginModule required\n  username="admin"\n  password="password123";'}
+                      className={`w-full font-mono rounded-xl border p-3 text-xs outline-none transition-all leading-relaxed ${
+                        isDark
+                          ? 'border-white/10 bg-[#070a14] text-emerald-300 placeholder-mist-600 focus:border-indigo-500'
+                          : 'border-slate-300 bg-slate-50 text-slate-800 placeholder-slate-400 shadow-xs focus:border-indigo-500 focus:bg-white'
+                      }`}
+                    />
+                    <p className={`mt-1 text-[11px] ${isDark ? 'text-mist-500' : 'text-slate-500'}`}>
+                      Direct JAAS login configuration passed to client drivers (Confluent, AWS MSK, Redpanda).
+                    </p>
+                  </div>
+                )}
+
+                {/* Optional Quick Username / Password inputs */}
+                {authMethod !== 'SSL' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={`block text-[11px] mb-1 ${isDark ? 'text-mist-400' : 'text-slate-600 font-medium'}`}>
-                        Username / Key
+                        Username / API Key (Optional Helper)
                       </label>
                       <input
                         type="text"
                         value={authUsername}
-                        onChange={(e) => setAuthUsername(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setAuthUsername(val)
+                          if (!saslJaasConfig || saslJaasConfig.includes('LoginModule')) {
+                            setSaslJaasConfig(generateJaasSnippet(saslMechanism, val, authPassword))
+                          }
+                        }}
                         placeholder="admin"
                         className={`w-full rounded-xl border px-3.5 py-2 text-xs outline-none transition-all ${
                           isDark
@@ -623,12 +783,18 @@ export default function KafkaClusterConfig({
                     </div>
                     <div>
                       <label className={`block text-[11px] mb-1 ${isDark ? 'text-mist-400' : 'text-slate-600 font-medium'}`}>
-                        Password / Secret
+                        Password / Secret (Optional Helper)
                       </label>
                       <input
                         type="password"
                         value={authPassword}
-                        onChange={(e) => setAuthPassword(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setAuthPassword(val)
+                          if (!saslJaasConfig || saslJaasConfig.includes('LoginModule')) {
+                            setSaslJaasConfig(generateJaasSnippet(saslMechanism, authUsername, val))
+                          }
+                        }}
                         placeholder="••••••••"
                         className={`w-full rounded-xl border px-3.5 py-2 text-xs outline-none transition-all ${
                           isDark

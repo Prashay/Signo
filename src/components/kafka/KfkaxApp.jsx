@@ -12,6 +12,8 @@ const INITIAL_CLUSTERS = [
   {
     id: 'cluster-local',
     name: 'local',
+    environment: 'local',
+    securityProtocol: 'PLAINTEXT',
     version: '3.5-IV2',
     status: 'checking',
     readOnly: false,

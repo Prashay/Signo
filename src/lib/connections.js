@@ -18,7 +18,13 @@ export function makeConnection(opts = {}) {
     keepalive: opts.keepalive || 60,
     clean: opts.clean !== false,
     protocolVersion: opts.protocolVersion || 4,
-    rejectUnauthorized: opts.rejectUnauthorized !== false,
+    tls: opts.tls !== undefined ? Boolean(opts.tls) : (opts.protocol === 'mqtts' || opts.protocol === 'wss'),
+    validateCertificate: opts.validateCertificate !== false && opts.rejectUnauthorized !== false,
+    rejectUnauthorized: opts.validateCertificate !== false && opts.rejectUnauthorized !== false,
+    caCert: opts.caCert || '',
+    clientCert: opts.clientCert || '',
+    clientKey: opts.clientKey || '',
+    keyPassphrase: opts.keyPassphrase || '',
     subscriptions: opts.subscriptions || [{ topic: '#', qos: 0 }],
     status: 'disconnected',
     error: '',
@@ -45,7 +51,13 @@ export function persistList(list) {
     keepalive: c.keepalive,
     clean: c.clean,
     protocolVersion: c.protocolVersion,
+    tls: c.tls,
+    validateCertificate: c.validateCertificate,
     rejectUnauthorized: c.rejectUnauthorized,
+    caCert: c.caCert,
+    clientCert: c.clientCert,
+    clientKey: c.clientKey,
+    keyPassphrase: c.keyPassphrase,
     subscriptions: c.subscriptions
   }))
   localStorage.setItem('mqtt-studio-connections', JSON.stringify(safe))

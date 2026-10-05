@@ -115,6 +115,11 @@ export default function KafkaSidebar({
                       }`}
                     />
                     <span>{c.name}</span>
+                    {c.environment && (
+                      <span className="rounded px-1 py-0.2 text-[8px] uppercase font-mono font-bold tracking-wider bg-white/10 opacity-75">
+                        {c.environment}
+                      </span>
+                    )}
                   </div>
                   <span className={`font-mono text-[10px] ${isDark ? 'text-mist-500' : 'text-slate-400'}`}>{c.version}</span>
                 </button>

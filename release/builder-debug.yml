@@ -6,6 +6,7 @@ x64:
     - dist/**/*
     - server/**/*
     - electron/**/*
+    - build/**/*
     - package.json
     - '!**/*.{iml,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,suo,xproj,cc,d.ts,mk,a,o,obj,forge-meta,pdb}'
     - '!**/._*'
@@ -19,4 +20,5 @@ x64:
     - dist/**/*
     - server/**/*
     - electron/**/*
+    - build/**/*
     - package.json

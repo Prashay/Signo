@@ -170,8 +170,12 @@ wss.on('connection', (socket) => {
         clean: options.clean !== false,
         reconnectPeriod: 0,
         connectTimeout: 12000,
-        rejectUnauthorized: options.rejectUnauthorized !== false,
-        protocolVersion: Number(options.protocolVersion || 4)
+        rejectUnauthorized: options.rejectUnauthorized !== false && options.validateCertificate !== false,
+        protocolVersion: Number(options.protocolVersion || 4),
+        ca: options.caCert ? options.caCert : undefined,
+        cert: options.clientCert ? options.clientCert : undefined,
+        key: options.clientKey ? options.clientKey : undefined,
+        passphrase: options.keyPassphrase || undefined
       })
 
       sessions.set(id, client)

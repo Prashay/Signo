@@ -1,0 +1,66 @@
+name: Build macOS App
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'server/**'
+      - 'build/**'
+      - 'package.json'
+      - 'electron-builder.json'
+      - '.github/workflows/build-mac.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    name: Build macOS (ARM64 + x64)
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate App Icons
+        run: npm run build:icons
+
+      - name: Build Web Assets & Package macOS App
+        run: npm run electron:dist:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload macOS Artifacts (.dmg & .zip)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Signo-Studio-macOS
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.blockmap
+          retention-days: 14
+
+      - name: Publish Release Assets (for version tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.dmg
+            release/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
