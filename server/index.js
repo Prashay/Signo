@@ -13,7 +13,10 @@ import {
   fetchKafkaClusterDetails,
   createKafkaTopic,
   produceKafkaMessage,
-  fetchKafkaConsumerGroups
+  fetchKafkaConsumerGroups,
+  fetchKafkaTopicDetails,
+  fetchKafkaTopicMessages,
+  fetchKafkaTopicConsumers
 } from './kafkaService.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -25,7 +28,15 @@ app.use(cors())
 app.use(express.json({ limit: '1mb' }))
 
 if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath))
+  app.use(express.static(distPath, {
+    etag: false,
+    lastModified: false,
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+      res.setHeader('Pragma', 'no-cache')
+      res.setHeader('Expires', '0')
+    }
+  }))
 }
 
 app.get('/api/health', (_req, res) => {
@@ -119,9 +130,37 @@ app.post('/api/kafka/consumers', async (req, res) => {
   res.json(result)
 })
 
+app.post('/api/kafka/topic-details', async (req, res) => {
+  const { cluster, topic } = req.body || {}
+  if (!topic) return res.status(400).json({ ok: false, error: 'Topic name is required' })
+  const result = await fetchKafkaTopicDetails(cluster, String(topic))
+  res.json(result)
+})
+
+app.post('/api/kafka/topic-messages', async (req, res) => {
+  const { cluster, ...options } = req.body || {}
+  if (!options.topic) return res.status(400).json({ ok: false, error: 'Topic name is required' })
+  const result = await fetchKafkaTopicMessages(cluster, options)
+  res.json(result)
+})
+
+app.post('/api/kafka/topic-consumers', async (req, res) => {
+  const { cluster, topic } = req.body || {}
+  if (!topic) return res.status(400).json({ ok: false, error: 'Topic name is required' })
+  const result = await fetchKafkaTopicConsumers(cluster, String(topic))
+  res.json(result)
+})
+
+app.get('/api/version', (_req, res) => {
+  res.json({ ok: true, build: '1.0.2-kafka-ui-hardfix' })
+})
+
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/ws')) return next()
   if (fs.existsSync(path.join(distPath, 'index.html'))) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    res.setHeader('Pragma', 'no-cache')
+    res.setHeader('Expires', '0')
     return res.sendFile(path.join(distPath, 'index.html'))
   }
   next()

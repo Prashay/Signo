@@ -12,57 +12,17 @@ import {
   Clock,
   Hash,
   Database,
-  Radio,
   ArrowUpRight,
   Filter,
   RefreshCw
 } from 'lucide-react'
 import { useThemeSettings } from '../../context/ThemeSettingsContext.jsx'
 
-const DEFAULT_TOPICS = [
-  {
-    name: 'store.pos.transactions',
-    partitions: 4,
-    replicationFactor: 1,
-    messagesCount: 1420,
-    size: '4.8 MB',
-    cleanUp: 'Delete',
-    internal: false
-  },
-  {
-    name: 'inventory.events.stream',
-    partitions: 3,
-    replicationFactor: 1,
-    messagesCount: 890,
-    size: '2.1 MB',
-    cleanUp: 'Compact',
-    internal: false
-  },
-  {
-    name: 'ecommerce.orders.v1',
-    partitions: 6,
-    replicationFactor: 1,
-    messagesCount: 3540,
-    size: '12.4 MB',
-    cleanUp: 'Delete',
-    internal: false
-  },
-  {
-    name: '_schemas',
-    partitions: 1,
-    replicationFactor: 1,
-    messagesCount: 18,
-    size: '42 KB',
-    cleanUp: 'Compact',
-    internal: true
-  }
-]
-
-export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
+export default function KafkaTopicsView({ cluster, onTopicsUpdated, onTopicOpen }) {
   const { theme } = useThemeSettings()
   const isDark = theme === 'dark'
 
-  const [topics, setTopics] = useState(DEFAULT_TOPICS)
+  const [topics, setTopics] = useState([])
   const [search, setSearch] = useState('')
   const [hideInternal, setHideInternal] = useState(false)
   const [loadingTopics, setLoadingTopics] = useState(false)
@@ -72,8 +32,6 @@ export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
   // Modal states
   const [createModal, setCreateModal] = useState(false)
   const [produceModal, setProduceModal] = useState(false)
-  const [selectedTopic, setSelectedTopic] = useState(null)
-  const [inspectModal, setInspectModal] = useState(false)
 
   // Create topic state
   const [newTopicName, setNewTopicName] = useState('')
@@ -82,30 +40,12 @@ export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
   const [newCleanup, setNewCleanup] = useState('Delete')
 
   // Produce state
-  const [produceTopic, setProduceTopic] = useState('store.pos.transactions')
+  const [produceTopic, setProduceTopic] = useState('')
   const [produceKey, setProduceKey] = useState('store_6339')
   const [produceValue, setProduceValue] = useState(
     JSON.stringify({ event: 'SALE_COMPLETED', amount: 129.5, cashier: 'Jane', ts: Date.now() }, null, 2)
   )
   const [produceStatus, setProduceStatus] = useState(null)
-
-  // Simulated messages for inspector
-  const [simulatedMessages, setSimulatedMessages] = useState([
-    {
-      offset: 1419,
-      partition: 0,
-      timestamp: Date.now() - 4000,
-      key: 'store_6339',
-      value: JSON.stringify({ event: 'ITEM_SCAN', sku: 'SKU-8921', price: 14.99, aisle: 4 }, null, 2)
-    },
-    {
-      offset: 1420,
-      partition: 2,
-      timestamp: Date.now() - 1500,
-      key: 'store_6339',
-      value: JSON.stringify({ event: 'SALE_COMPLETED', orderId: 'ORD-9902', total: 78.4, payment: 'NFC' }, null, 2)
-    }
-  ])
 
   const loadTopics = useCallback(async () => {
     if (!cluster) return
@@ -128,16 +68,12 @@ export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
       } else {
         setIsLive(false)
         setFetchError(data.error || 'Failed to fetch topics from broker')
-        if (cluster.id === 'cluster-local' || (!topics || topics.length === 0)) {
-          setTopics(DEFAULT_TOPICS)
-        }
+        setTopics([])
       }
     } catch (err) {
       setIsLive(false)
       setFetchError(err.message || 'Unable to connect to Kafka API')
-      if (cluster.id === 'cluster-local' || (!topics || topics.length === 0)) {
-        setTopics(DEFAULT_TOPICS)
-      }
+      setTopics([])
     } finally {
       setLoadingTopics(false)
     }
@@ -173,28 +109,10 @@ export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
       if (data.ok) {
         await loadTopics()
       } else {
-        const topic = {
-          name,
-          partitions: Number(newPartitions) || 1,
-          replicationFactor: Number(newReplication) || 1,
-          messagesCount: 0,
-          size: '0 Bytes',
-          cleanUp: newCleanup,
-          internal: false
-        }
-        setTopics((prev) => [topic, ...prev])
+        setFetchError(data.error || 'Kafka rejected topic creation')
       }
-    } catch {
-      const topic = {
-        name,
-        partitions: Number(newPartitions) || 1,
-        replicationFactor: Number(newReplication) || 1,
-        messagesCount: 0,
-        size: '0 Bytes',
-        cleanUp: newCleanup,
-        internal: false
-      }
-      setTopics((prev) => [topic, ...prev])
+    } catch (err) {
+      setFetchError(err.message || 'Unable to create topic on Kafka broker')
     }
     setNewTopicName('')
     setCreateModal(false)
@@ -202,11 +120,16 @@ export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
 
   const handleProduce = async (e) => {
     e.preventDefault()
+    if (!produceTopic) {
+      setProduceStatus('Select a Kafka topic before publishing a message')
+      return
+    }
     let parsedVal = produceValue
     try {
       parsedVal = JSON.parse(produceValue)
     } catch {}
 
+    let publishOk = false
     try {
       const res = await fetch('/api/kafka/produce', {
         method: 'POST',
@@ -220,22 +143,18 @@ export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
       })
       const data = await res.json()
       if (data.ok) {
+        publishOk = true
         setProduceStatus('Message published successfully to Kafka broker partition!')
       } else {
-        setProduceStatus(`Published notice: ${data.error || 'Simulated locally'}`)
+        setProduceStatus(`Publish failed: ${data.error || 'Kafka rejected the message'}`)
       }
     } catch {
-      setProduceStatus('Published to local stream inspector (cluster offline)')
+      setProduceStatus('Publish failed: Kafka broker is unavailable')
     }
 
-    const msg = {
-      offset: Math.floor(Math.random() * 5000) + 1000,
-      partition: Math.floor(Math.random() * 3),
-      timestamp: Date.now(),
-      key: produceKey,
-      value: produceValue
+    if (publishOk) {
+      await loadTopics()
     }
-    setSimulatedMessages((prev) => [msg, ...prev])
     setTimeout(() => {
       setProduceStatus(null)
       setProduceModal(false)
@@ -292,11 +211,12 @@ export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
           <button
             type="button"
             onClick={() => setProduceModal(true)}
+            disabled={topics.length === 0}
             className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold transition-all shadow-sm ${
               isDark
                 ? 'border-indigo-500/30 bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20'
                 : 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-            }`}
+            } ${topics.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <Send size={14} />
             <span>Produce Message</span>
@@ -344,7 +264,7 @@ export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
             <div className="min-w-0 truncate">
               <span className="font-semibold">Broker unreachable: </span>
               <span className="font-mono text-[11px]">{fetchError}</span>
-              <span className="opacity-80"> (showing fallback topics)</span>
+              <span className="opacity-80"> (no fallback/demo topics are shown)</span>
             </div>
           </div>
           <button
@@ -430,8 +350,7 @@ export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
                         <button
                           type="button"
                           onClick={() => {
-                            setSelectedTopic(topic)
-                            setInspectModal(true)
+                            if (onTopicOpen) onTopicOpen(topic)
                           }}
                           className={`font-semibold font-sans text-xs transition-colors ${
                             isDark ? 'text-white hover:text-cyan-300' : 'text-slate-900 hover:text-indigo-600'
@@ -462,18 +381,17 @@ export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
                         <button
                           type="button"
                           onClick={() => {
-                            setSelectedTopic(topic)
-                            setInspectModal(true)
+                            if (onTopicOpen) onTopicOpen(topic)
                           }}
                           className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-all ${
                             isDark
                               ? 'border-white/10 bg-white/5 text-mist-200 hover:bg-white/10 hover:text-white'
                               : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 shadow-xs'
                           }`}
-                          title="Inspect Live Messages"
+                          title="Open Topic Details"
                         >
                           <Eye size={13} className={isDark ? 'text-cyan-400' : 'text-cyan-600'} />
-                          <span>Inspect</span>
+                          <span>Open</span>
                         </button>
 
                         <button
@@ -753,95 +671,6 @@ export default function KafkaTopicsView({ cluster, onTopicsUpdated }) {
         </div>
       )}
 
-      {/* INSPECT MESSAGES DRAWER / MODAL */}
-      {inspectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md">
-          <div
-            className={`flex h-[82vh] w-full max-w-3xl flex-col rounded-2xl border p-6 shadow-2xl transition-all ${
-              isDark ? 'border-white/10 bg-[#0d101b] text-mist-100' : 'border-slate-200 bg-white text-slate-800'
-            }`}
-          >
-            <div className={`flex items-center justify-between border-b pb-4 mb-4 ${isDark ? 'border-white/[0.08]' : 'border-slate-100'}`}>
-              <div>
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                      isDark ? 'bg-cyan-500/20 text-cyan-400' : 'bg-cyan-100 text-cyan-700'
-                    }`}
-                  >
-                    <Radio size={14} className="animate-pulse" />
-                  </div>
-                  <h2 className={`font-display text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    Live Stream:{' '}
-                    <span className={`font-mono ${isDark ? 'text-cyan-300' : 'text-indigo-600'}`}>
-                      {selectedTopic?.name}
-                    </span>
-                  </h2>
-                </div>
-                <div className={`text-[11px] ml-9 ${isDark ? 'text-mist-400' : 'text-slate-500'}`}>
-                  Showing real-time stream consumer feed from partition offsets
-                </div>
-              </div>
-              <button
-                onClick={() => setInspectModal(false)}
-                className={`transition-colors ${isDark ? 'text-mist-400 hover:text-white' : 'text-slate-400 hover:text-slate-700'}`}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-3 font-mono text-xs pr-1">
-              {simulatedMessages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`rounded-xl border p-4 space-y-2 transition-all shadow-xs ${
-                    isDark
-                      ? 'border-white/[0.08] bg-black/30 hover:border-indigo-500/40'
-                      : 'border-slate-200 bg-slate-50 hover:border-indigo-300'
-                  }`}
-                >
-                  <div className={`flex flex-wrap items-center justify-between gap-2 text-[11px] border-b pb-2 ${isDark ? 'text-mist-400 border-white/[0.06]' : 'text-slate-500 border-slate-200'}`}>
-                    <div className="flex items-center gap-3">
-                      <span className={`flex items-center gap-1 font-semibold ${isDark ? 'text-cyan-300' : 'text-cyan-700'}`}>
-                        <Hash size={12} /> Partition: {msg.partition}
-                      </span>
-                      <span>Offset: {msg.offset}</span>
-                      {msg.key && <span className={isDark ? 'text-indigo-300' : 'text-indigo-600 font-medium'}>Key: {msg.key}</span>}
-                    </div>
-                    <div className={`flex items-center gap-1 ${isDark ? 'text-mist-500' : 'text-slate-400'}`}>
-                      <Clock size={11} />
-                      <span>{new Date(msg.timestamp).toLocaleTimeString()}</span>
-                    </div>
-                  </div>
-                  <pre
-                    className={`overflow-x-auto text-[11px] whitespace-pre-wrap leading-relaxed rounded-lg p-2 ${
-                      isDark
-                        ? 'text-emerald-300 bg-black/30'
-                        : 'text-emerald-800 bg-white border border-slate-200'
-                    }`}
-                  >
-                    {msg.value}
-                  </pre>
-                </div>
-              ))}
-            </div>
-
-            <div className={`flex items-center justify-end pt-4 border-t ${isDark ? 'border-white/[0.08]' : 'border-slate-100'}`}>
-              <button
-                type="button"
-                onClick={() => setInspectModal(false)}
-                className={`rounded-xl border px-5 py-2 text-xs font-medium transition-all ${
-                  isDark
-                    ? 'border-white/10 bg-white/5 text-white hover:bg-white/10'
-                    : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 shadow-xs'
-                }`}
-              >
-                Close Inspector
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

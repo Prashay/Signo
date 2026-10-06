@@ -4,7 +4,7 @@
   "description": "Unified Streaming & Broker Console for MQTT and Kafka Event Streams",
   "author": "Signo Platform",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.2",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {

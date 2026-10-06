@@ -6,6 +6,7 @@ import KafkaClusterConfig from './KafkaClusterConfig.jsx'
 import KafkaBrokersView from './KafkaBrokersView.jsx'
 import KafkaTopicsView from './KafkaTopicsView.jsx'
 import KafkaConsumersView from './KafkaConsumersView.jsx'
+import KafkaTopicDetailView from './KafkaTopicDetailView.jsx'
 import { useThemeSettings } from '../../context/ThemeSettingsContext.jsx'
 
 const INITIAL_CLUSTERS = [
@@ -61,7 +62,8 @@ export default function KfkaxApp() {
     return 'cluster-local'
   })
 
-  const [currentView, setCurrentView] = useState('dashboard') // 'dashboard' | 'config' | 'brokers' | 'topics' | 'consumers'
+  const [currentView, setCurrentView] = useState('dashboard') // 'dashboard' | 'config' | 'brokers' | 'topics' | 'consumers' | 'topic-detail'
+  const [selectedTopic, setSelectedTopic] = useState(null)
   const [editingCluster, setEditingCluster] = useState(null)
   const [successNotice, setSuccessNotice] = useState('')
   const [isProbing, setIsProbing] = useState(false)
@@ -320,6 +322,18 @@ export default function KfkaxApp() {
           <KafkaTopicsView
             cluster={activeCluster}
             onTopicsUpdated={handleTopicsUpdated}
+            onTopicOpen={(topic) => {
+              setSelectedTopic(topic)
+              setCurrentView('topic-detail')
+            }}
+          />
+        )}
+
+        {currentView === 'topic-detail' && selectedTopic && (
+          <KafkaTopicDetailView
+            cluster={activeCluster}
+            topic={selectedTopic}
+            onBack={() => setCurrentView('topics')}
           />
         )}
 

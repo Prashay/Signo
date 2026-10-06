@@ -1,4 +1,8 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron')
+
+// Always load the current renderer bundle. This prevents packaged Electron from
+// serving an older cached Signo/Kafka UI after a rebuild.
+app.commandLine.appendSwitch('disable-http-cache')
 const path = require('node:path')
 const http = require('node:http')
 const { fork } = require('node:child_process')
@@ -122,7 +126,7 @@ function createWindow() {
   })
 
   // Determine target URL to load
-  const targetUrl = isDev ? DEV_URL : PROD_URL
+  const targetUrl = isDev ? `${DEV_URL}?signoBuild=1.0.2-kafka-ui-hardfix` : `${PROD_URL}?signoBuild=1.0.2-kafka-ui-hardfix`
 
   console.log(`[Electron] Loading UI from: ${targetUrl}`)
 

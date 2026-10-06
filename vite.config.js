@@ -10,6 +10,9 @@ export default defineConfig({
     watch: {
       ignored: ['**/release/**', '**/dist/**']
     },
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+    },
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:3900',
@@ -24,6 +27,9 @@ export default defineConfig({
   preview: {
     host: '0.0.0.0',
     port: 7200,
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+    },
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:3900',
