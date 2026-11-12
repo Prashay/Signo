@@ -46,11 +46,16 @@ export const FONT_SIZE_OPTIONS = [
 ]
 
 const ThemeSettingsContext = createContext(null)
+const DEFAULT_DESIGN = 'modern'
 
 export function ThemeSettingsProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('signo_theme') || 'dark'
   })
+
+  const [design, setDesign] = useState(() =>
+    localStorage.getItem('signo_design') === 'classic' ? 'classic' : DEFAULT_DESIGN
+  )
 
   const [fontFamily, setFontFamily] = useState(() => {
     return localStorage.getItem('signo_font_family') || 'ibm-plex'
@@ -75,6 +80,11 @@ export function ThemeSettingsProvider({ children }) {
     }
   }, [theme])
 
+  useEffect(() => {
+    document.documentElement.dataset.design = design
+    localStorage.setItem('signo_design', design)
+  }, [design])
+
   // Apply Font Family
   useEffect(() => {
     localStorage.setItem('signo_font_family', fontFamily)
@@ -97,6 +107,7 @@ export function ThemeSettingsProvider({ children }) {
 
   const resetDefaults = () => {
     setTheme('dark')
+    setDesign(DEFAULT_DESIGN)
     setFontFamily('ibm-plex')
     setFontSize('normal')
   }
@@ -107,6 +118,8 @@ export function ThemeSettingsProvider({ children }) {
         theme,
         setTheme,
         toggleTheme,
+        design,
+        setDesign,
         fontFamily,
         setFontFamily,
         fontSize,

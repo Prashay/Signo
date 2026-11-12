@@ -1,0 +1,611 @@
+/* The product overview uses the existing workspace cards as illustrated tiles. */
+:where([data-design="modern"]) #root > div {
+  --overview-bg: #f5f7fa;
+  --overview-glow-blue: rgb(140 174 226 / .24);
+  --overview-glow-teal: rgb(136 200 194 / .18);
+  --overview-grid: rgb(78 101 135 / .12);
+  --glass-base: 255 255 255;
+  --glass-outline: rgb(52 78 108 / .28);
+  --glass-mqtt-ink: 27 106 116;
+  --glass-kafka-ink: 54 82 153;
+  --overview-ink: #171717;
+  --overview-muted: #54575c;
+  --overview-line: #dedfe1;
+  --overview-blue: #0070ce;
+  --header-bg: rgb(255 255 255 / .68);
+  --header-tint: rgb(146 190 239 / .28);
+  --header-rim: rgb(255 255 255 / .9);
+  --header-ink: #202124;
+  --header-muted: #54575c;
+  --header-line: #dedfe1;
+  --header-control: #f4f5f7;
+  --header-hover: #e8edf4;
+  --header-focus: #0067bd;
+  --header-active: #e6effb;
+  --header-glass: rgb(255 255 255 / .48);
+  height: 100%;
+  width: 100%;
+}
+
+[data-theme="dark"]:where([data-design="modern"]) #root > div {
+  --overview-bg: #08090b;
+  --overview-glow-blue: transparent;
+  --overview-glow-teal: transparent;
+  --overview-grid: transparent;
+  --glass-base: 32 40 54;
+  --glass-outline: rgb(212 232 255 / .34);
+  --glass-mqtt-ink: 144 224 218;
+  --glass-kafka-ink: 176 197 255;
+  --overview-ink: #f5f5f5;
+  --overview-muted: #c3c5ca;
+  --overview-line: #393b40;
+  --header-bg: rgb(27 33 43 / .72);
+  --header-tint: rgb(74 119 177 / .24);
+  --header-rim: rgb(255 255 255 / .11);
+  --header-ink: #fff;
+  --header-muted: #d4d6db;
+  --header-line: #535459;
+  --header-control: #38393c;
+  --header-hover: #4c4d51;
+  --header-focus: #a3cfff;
+  --header-active: #263e5b;
+  --header-glass: rgb(255 255 255 / .06);
+}
+
+:where([data-design="modern"]) #root > div > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  flex-shrink: 0;
+  min-height: 4rem;
+  height: auto;
+  gap: 1rem;
+  padding-block: .5rem;
+  padding-right: clamp(1rem, 2.25vw, 2rem);
+  background:
+    radial-gradient(ellipse at 50% 0%, var(--header-tint), transparent 72%),
+    var(--header-bg);
+  border-color: var(--header-line);
+  color: var(--header-ink);
+  box-shadow: inset 0 1px 0 var(--header-rim), 0 4px 18px rgb(10 22 40 / .08);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+:where([data-design="modern"]) #root > div > header > button {
+  min-width: 0;
+  justify-self: start;
+  gap: .65rem;
+}
+
+:where([data-design="modern"]) #root > div > header > button > .bg-gradient-to-tr {
+  flex: none;
+  background: var(--header-active);
+  color: var(--header-focus);
+  border-radius: .55rem;
+  box-shadow: inset 0 1px 0 var(--header-rim);
+  transform: none;
+}
+
+:where([data-design="modern"]) #root > div > header > button > .bg-gradient-to-tr > svg {
+  color: currentColor;
+  animation: none;
+}
+
+:where([data-design="modern"]) #root > div > header > button > .bg-gradient-to-tr > .rounded-full,
+:where([data-design="modern"]) #root > div > header > button .font-display + span,
+:where([data-design="modern"]) #root > div > header > div:nth-child(2) > button:last-child > span:nth-of-type(n + 2) {
+  display: none;
+}
+
+:where([data-design="modern"]) #root > div > header > button .font-display {
+  color: var(--header-ink);
+  font-size: 1rem;
+  letter-spacing: .055em;
+}
+
+:where([data-design="modern"]) #root > div > header > button :is(.text-slate-500, .text-mist-400) {
+  color: var(--header-muted);
+  line-height: 1.25;
+}
+
+:where([data-design="modern"]) #root > div > header > div:nth-child(2) {
+  gap: .2rem;
+  border-color: var(--header-line);
+  border-radius: .7rem;
+  background: var(--header-glass);
+  box-shadow: inset 0 1px 0 var(--header-rim);
+}
+
+:where([data-design="modern"]) #root > div > header > div:nth-child(2) > button {
+  min-height: 2.15rem;
+  color: var(--header-muted);
+  border-radius: .45rem;
+  padding-inline: .75rem;
+  white-space: nowrap;
+}
+
+:where([data-design="modern"]) #root > div > header > div:nth-child(2) > button:hover {
+  background: var(--header-hover);
+  color: var(--header-ink);
+}
+
+:where([data-design="modern"]) #root > div > header > div:nth-child(2) > button.text-white,
+:where([data-design="modern"]) #root > div > header > div:nth-child(2) > button.text-white:hover {
+  background: var(--header-active);
+  color: var(--header-focus);
+  box-shadow: inset 0 1px 0 var(--header-rim), 0 1px 3px rgb(10 22 40 / .08);
+}
+
+:where([data-design="modern"]) #root > div > header > div:nth-child(2) > button > svg {
+  color: currentColor;
+}
+
+[data-theme="light"]:where([data-design="modern"]) #root > div > header > div:nth-child(2) > button > .rounded-full {
+  background: #d9f2e6;
+  color: #166047;
+}
+
+:where([data-design="modern"]) #root > div > header > div:last-child {
+  justify-self: end;
+  gap: .4rem;
+}
+
+:where([data-design="modern"]) #root > div > header > div:last-child > div {
+  gap: .4rem;
+  padding-inline: .5rem;
+  border-color: var(--header-line);
+  background: var(--header-glass);
+  white-space: nowrap;
+}
+
+[data-theme="light"]:where([data-design="modern"]) #root > div > header > div:last-child .text-emerald-500 {
+  color: #187450;
+}
+
+:where([data-design="modern"]) #root > div > header > div:last-child > :is(button, span) {
+  min-height: 2.15rem;
+  min-width: 2.15rem;
+  background: var(--header-glass);
+  border-color: var(--header-line);
+  color: var(--header-ink);
+  border-radius: .45rem;
+  box-shadow: inset 0 1px 0 var(--header-rim);
+}
+
+:where([data-design="modern"]) #root > div > header > div:last-child > button:hover {
+  background: var(--header-hover);
+}
+
+:where([data-design="modern"]) #root > div > header > div:last-child > button > svg {
+  color: currentColor;
+}
+
+:where([data-design="modern"]) #root > div > header :is(button, a):focus-visible {
+  outline: 2px solid var(--header-focus);
+  outline-offset: 3px;
+}
+
+:where([data-design="modern"]) #root > div > main > div:first-child > div:first-child {
+  display: block;
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
+  background:
+    radial-gradient(ellipse at 78% 0%, var(--overview-glow-blue), transparent 62%),
+    radial-gradient(ellipse at 10% 100%, var(--overview-glow-teal), transparent 58%),
+    radial-gradient(circle, var(--overview-grid) 1px, transparent 1.5px) 0 0 / 24px 24px,
+    var(--overview-bg);
+  color: var(--overview-ink);
+  overflow: hidden;
+}
+
+:where([data-design="modern"]) #root > div > main > div:first-child > div:first-child > .pointer-events-none {
+  display: none;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl {
+  height: 100%;
+  max-width: 74rem;
+  justify-content: center;
+  gap: clamp(.75rem, 2.4dvh, 2rem);
+  padding: clamp(.75rem, 3dvh, 2.5rem) clamp(1rem, 4vw, 3rem);
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .text-center {
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl h1 {
+  color: var(--overview-ink);
+  font-family: var(--app-font-family);
+  font-size: clamp(2.75rem, 6vw, 5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -.045em;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl h1 span {
+  background: none;
+  color: inherit;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .text-center > p {
+  max-width: 39rem;
+  margin-top: 1.25rem;
+  color: var(--overview-muted);
+  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+  line-height: 1.4;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .text-center .rounded-full.border,
+:where([data-design="modern"]) #root main .max-w-6xl > .text-center .rounded-lg.border {
+  background: transparent;
+  border-color: var(--overview-line);
+  border-radius: 999px;
+  color: var(--overview-muted);
+  box-shadow: none;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .text-center .rounded-full.border > :is(span, svg) {
+  color: inherit;
+  animation: none;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .text-center button.rounded-full:hover {
+  background: #0067bd;
+  border-color: #0067bd;
+  color: #fff;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid {
+  flex: 1 1 0;
+  width: min(100%, 57rem);
+  min-height: 0;
+  max-height: 32rem;
+  margin-inline: auto;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group {
+  --glass-tint: 54 133 142;
+  --glass-shadow: 13 62 76;
+  --glass-art: var(--glass-mqtt-ink);
+  display: flex;
+  justify-content: flex-end;
+  min-height: 0;
+  overflow: hidden;
+  isolation: isolate;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 0;
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(ellipse at 22% 0%, rgb(var(--glass-tint) / .2), transparent 68%),
+    rgb(var(--glass-base) / .12);
+  color: var(--overview-ink);
+  box-shadow:
+    0 12px 28px rgb(var(--glass-shadow) / .12),
+    0 2px 6px rgb(10 22 40 / .06);
+  transform: none;
+  -webkit-backdrop-filter: blur(2px) saturate(125%);
+  backdrop-filter: blur(2px) saturate(125%);
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group + .group {
+  --glass-tint: 100 123 187;
+  --glass-shadow: 38 55 105;
+  --glass-art: var(--glass-kafka-ink);
+}
+
+/* Reflections along the curved rim and across the glass surface. */
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group > .pointer-events-none {
+  inset: 0;
+  z-index: 1;
+  width: auto;
+  height: auto;
+  border-radius: inherit;
+  opacity: 1;
+  background:
+    radial-gradient(ellipse at 22% 0%, rgb(255 255 255 / .27), transparent 58%) 0 0 / 140% 85% no-repeat,
+    radial-gradient(ellipse at 100% 100%, rgb(195 218 255 / .18), transparent 38%);
+  box-shadow:
+    inset 0 0 0 1px var(--glass-outline),
+    inset 1px 2px 1px rgb(255 255 255 / .32),
+    inset -1px -2px 2px rgb(208 232 255 / .19),
+    inset 0 0 14px rgb(214 236 255 / .14);
+  transition: none;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: '';
+  background: linear-gradient(to top, rgb(var(--glass-base) / .40) 12%, transparent 68%);
+}
+
+/* Concentric radio waves and a central telemetry node. */
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group::after {
+  position: absolute;
+  z-index: -2;
+  top: 5%;
+  left: 50%;
+  width: min(79%, 19rem);
+  aspect-ratio: 1;
+  content: '';
+  transform: translateX(-50%);
+  background:
+    radial-gradient(circle at center, rgb(var(--glass-art) / .90) 0 5%, rgb(var(--glass-art) / .22) 5.5% 10%, transparent 10.5%),
+    repeating-radial-gradient(circle at center, transparent 0 13%, rgb(var(--glass-art) / .48) 13.2% 13.8%, transparent 14% 18%),
+    radial-gradient(circle at center, rgb(var(--glass-art) / .10), transparent 70%);
+  mask-image: radial-gradient(circle, #000 58%, transparent 73%);
+  transition: scale .35s ease;
+}
+
+/* Three parallel partitions, each carrying a row of events. */
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group + .group::after {
+  top: 13%;
+  width: 67%;
+  aspect-ratio: 1.7;
+  border-block: 1px solid rgb(var(--glass-art) / .5);
+  background:
+    radial-gradient(circle closest-side, rgb(var(--glass-art) / .75) 45%, transparent 52%) 10% 0 / 25% 33.333% repeat,
+    repeating-linear-gradient(to bottom, rgb(var(--glass-art) / .10) 0 32%, rgb(var(--glass-art) / .45) 32% 33.333%);
+  mask-image: linear-gradient(to right, transparent, #000 8% 92%, transparent);
+  transform: translateX(-50%) skewY(-13deg);
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group > .pointer-events-none {
+    transition: background-position .5s ease;
+  }
+
+  :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group:hover > .pointer-events-none {
+    background-position: 100% 0, 0 0;
+  }
+
+  :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group:hover::after {
+    scale: 1.04;
+  }
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group .bg-gradient-to-tr,
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group .space-y-2\.5,
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group h2 + span,
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group > .border-t > :first-child {
+  display: none;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group .rounded-full.border {
+  border-color: var(--glass-outline);
+  background: rgb(var(--glass-base) / .48);
+  color: var(--overview-muted);
+  font-family: var(--app-font-family);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group h2 {
+  color: var(--overview-ink);
+  font-family: var(--app-font-family);
+  font-size: clamp(1.65rem, 3.2vw, 2.4rem);
+  line-height: 1.1;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group p {
+  color: var(--overview-muted);
+  font-size: 1rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group > .border-t {
+  justify-content: flex-end;
+  margin-top: .9rem;
+  padding: 0;
+  border: 0;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group .border-t > .bg-gradient-to-r {
+  min-height: 2.75rem;
+  border: 1px solid var(--glass-outline);
+  border-radius: 999px;
+  background: rgb(var(--glass-base) / .36);
+  color: var(--overview-ink);
+  box-shadow: none;
+  transform: none;
+  filter: none;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group:hover .border-t > .bg-gradient-to-r {
+  border-color: var(--overview-blue);
+  background: #0067bd;
+  color: #fff;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .mt-10 {
+  flex-shrink: 0;
+  width: min(100%, 57rem);
+  margin-top: 0;
+  margin-inline: auto;
+  border-color: var(--overview-line);
+  background: transparent;
+  color: var(--overview-ink);
+  box-shadow: none;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .mt-10 p {
+  color: var(--overview-muted);
+}
+
+/* Keep the settings body and bridge dialog scrollable on short displays. */
+:where([data-design="modern"]) #root > div > .fixed.inset-0 > .max-w-2xl,
+:where([data-design="modern"]) #root > div > main .fixed.inset-0 > .max-w-lg.overflow-hidden {
+  max-height: calc(100dvh - 2rem);
+}
+
+:where([data-design="modern"]) #root > div > .fixed.inset-0 > .max-w-2xl > .overflow-y-auto {
+  min-height: 0;
+}
+
+:where([data-design="modern"]) #root > div > .fixed.inset-0 > .max-w-2xl > :is(.border-b, .border-t) {
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+:where([data-design="modern"]) #root > div > main .fixed.inset-0 > .max-w-lg.overflow-hidden {
+  overflow-y: auto;
+}
+
+[data-theme="light"]:where([data-design="modern"]) #root > div > .fixed.inset-0 > .max-w-2xl {
+  background: #fff;
+  border-color: var(--header-line);
+  color: var(--header-ink);
+}
+
+[data-theme="light"]:where([data-design="modern"]) #root > div > .fixed.inset-0 > .max-w-2xl :is(.border-t, .border-b, button.border) {
+  border-color: var(--header-line);
+}
+
+[data-theme="light"]:where([data-design="modern"]) #root > div > .fixed.inset-0 > .max-w-2xl button.border {
+  min-width: 0;
+  color: var(--header-ink);
+  background: var(--header-control);
+}
+
+[data-theme="light"]:where([data-design="modern"]) #root > div > .fixed.inset-0 > .max-w-2xl button.border:is(:hover, .ring-1) {
+  background: var(--header-hover);
+}
+
+[data-theme="light"]:where([data-design="modern"]) #root > div > .fixed.inset-0 > .max-w-2xl :is(h2, div.font-semibold, span.font-semibold).text-white {
+  color: var(--header-ink);
+}
+
+[data-theme="light"]:where([data-design="modern"]) #root > div > .fixed.inset-0 > .max-w-2xl
+  :is(.text-mist-300, .text-mist-400, .text-mist-500, .text-mist-300\/80):not(.bg-\[\#090b11\] *, .bg-black\/40 *) {
+  color: var(--header-muted);
+}
+
+[data-theme="light"]:where([data-design="modern"]) #root > div > .fixed.inset-0 > .max-w-2xl .bg-black\/40 {
+  background: #eef2f7;
+  color: #166534;
+  box-shadow: none;
+}
+
+[data-theme="light"]:where([data-design="modern"]) #root > div > .fixed.inset-0 > .max-w-2xl .bg-black\/40 .text-mist-500 {
+  color: var(--header-muted);
+}
+
+/* The MQTT grid has implicit rows below its four-column breakpoint. */
+@media (max-width: 1279px) {
+  :where([data-design="modern"]) #root > div > main > div:nth-child(2) > div > main {
+    grid-auto-rows: minmax(18rem, auto);
+    overflow: auto;
+  }
+}
+
+@media (max-width: 85rem) {
+  :where([data-design="modern"]) #root > div > header > div:last-child > div {
+    display: none;
+  }
+}
+
+@media (max-width: 55rem) {
+  :where([data-design="modern"]) #root > div > header > button :is(.text-slate-500, .text-mist-400) {
+    display: none;
+  }
+}
+
+@media (max-width: 43rem) {
+  :where([data-design="modern"]) #root > div > header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .5rem;
+  }
+
+  :where([data-design="modern"]) #root > div > header > div:nth-child(2) {
+    grid-column: 1 / -1;
+    order: 1;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  :where([data-design="modern"]) #root > div > header > div:nth-child(2) > button {
+    flex: 1 0 auto;
+    justify-content: center;
+    padding-inline: clamp(.35rem, 2vw, .75rem);
+  }
+
+  :where([data-design="modern"]) #root main .max-w-6xl > .grid {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 28rem;
+  }
+
+  :where([data-design="modern"]) #root > div > main > div:nth-child(3) > div > header {
+    height: auto;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: .5rem;
+    padding-block: .5rem;
+  }
+
+  :where([data-design="modern"]) #root > div > main > div:nth-child(3) > div > .flex-1 {
+    flex-direction: column;
+  }
+
+  :where([data-design="modern"]) #root > div > main > div:nth-child(3) > div > .flex-1 > :first-child {
+    width: 100%;
+    max-height: min(12rem, 26dvh);
+    overflow-y: auto;
+  }
+
+  :where([data-design="modern"]) #root > div > main > div:nth-child(3) > div > .flex-1 > :nth-child(2) {
+    min-height: 0;
+    padding: 1rem;
+  }
+}
+
+@media (max-height: 53rem), (max-width: 43rem) {
+  :where([data-design="modern"]) #root main .max-w-6xl > .mt-10 {
+    display: none;
+  }
+
+  :where([data-design="modern"]) #root main .max-w-6xl h1 {
+    font-size: clamp(2rem, 5vw, 3.25rem);
+  }
+
+  :where([data-design="modern"]) #root main .max-w-6xl > .text-center > p {
+    margin-top: .6rem;
+    font-size: 1rem;
+  }
+
+  :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group {
+    padding: clamp(.75rem, 2.5dvh, 1.5rem);
+  }
+}
+
+@media (max-height: 37rem), (max-width: 43rem) and (max-height: 52rem) {
+  :where([data-design="modern"]) #root main .max-w-6xl > .text-center > .mt-5,
+  :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group :is(p, .rounded-full.border) {
+    display: none;
+  }
+
+  :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group > .border-t {
+    margin-top: .45rem;
+  }
+
+  :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group h2 {
+    font-size: clamp(1.2rem, 3vw, 1.65rem);
+  }
+}
+
+@media (max-height: 30rem) {
+  :where([data-design="modern"]) #root main .max-w-6xl > .text-center > p {
+    display: none;
+  }
+
+  :where([data-design="modern"]) #root main .max-w-6xl > .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

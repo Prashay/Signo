@@ -1,10 +1,17 @@
 import { X, Moon, Sun, Type, Sliders, RotateCcw, Check, Sparkles, Monitor } from 'lucide-react'
 import { useThemeSettings, FONT_OPTIONS, FONT_SIZE_OPTIONS } from '../../context/ThemeSettingsContext.jsx'
 
+const DESIGN_OPTIONS = [
+  { id: 'classic', name: 'Classic', description: 'Original header and workspace cards' },
+  { id: 'modern', name: 'Modern', description: 'Glass header and illustrated workspace cards' }
+]
+
 export default function SettingsModal() {
   const {
     theme,
     setTheme,
+    design,
+    setDesign,
     fontFamily,
     setFontFamily,
     fontSize,
@@ -30,7 +37,7 @@ export default function SettingsModal() {
                 Appearance & System Settings
               </h2>
               <p className="text-[11px] text-mist-400">
-                Configure color mode, typography family, and interface display density
+                Configure design, color mode, typography, and display density
               </p>
             </div>
           </div>
@@ -44,6 +51,33 @@ export default function SettingsModal() {
 
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          <fieldset>
+            <legend className="mb-3 text-xs font-bold uppercase tracking-wider text-mist-300">
+              Interface Design
+            </legend>
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              {DESIGN_OPTIONS.map(({ id, name, description }) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={design === id}
+                  onClick={() => setDesign(id)}
+                  className={`min-w-0 rounded-xl border p-3 text-left transition-colors ${
+                    design === id
+                      ? 'border-indigo-500/80 bg-indigo-600/20 ring-1 ring-indigo-500/50'
+                      : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.05]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-white">{name}</span>
+                    {design === id && <Check size={14} className="shrink-0 text-indigo-400" aria-hidden="true" />}
+                  </div>
+                  <span className="mt-1 block text-[11px] text-mist-400">{description}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
           {/* Section 1: Color Mode */}
           <div>
             <div className="flex items-center gap-2 mb-3">
