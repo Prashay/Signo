@@ -301,7 +301,7 @@
 /* Reflections along the curved rim and across the glass surface. */
 :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group > .pointer-events-none {
   inset: 0;
-  z-index: 1;
+  z-index: -1;
   width: auto;
   height: auto;
   border-radius: inherit;
@@ -327,33 +327,57 @@
 
 /* Concentric radio waves and a central telemetry node. */
 :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group::after {
-  position: absolute;
+  position: relative;
   z-index: -2;
-  top: 5%;
-  left: 50%;
-  width: min(79%, 19rem);
-  aspect-ratio: 1;
+  order: -1;
+  flex: 1 1 0;
+  align-self: center;
+  width: min(72%, 17rem);
+  min-height: 0;
+  max-height: 12rem;
+  margin-bottom: .5rem;
   content: '';
-  transform: translateX(-50%);
   background:
-    radial-gradient(circle at center, rgb(var(--glass-art) / .90) 0 5%, rgb(var(--glass-art) / .22) 5.5% 10%, transparent 10.5%),
-    repeating-radial-gradient(circle at center, transparent 0 13%, rgb(var(--glass-art) / .48) 13.2% 13.8%, transparent 14% 18%),
-    radial-gradient(circle at center, rgb(var(--glass-art) / .10), transparent 70%);
-  mask-image: radial-gradient(circle, #000 58%, transparent 73%);
+    radial-gradient(circle closest-side, rgb(var(--glass-art)) 0 8%, rgb(var(--glass-art) / .20) 9% 15%, transparent 16%),
+    repeating-radial-gradient(circle closest-side, transparent 0 calc(23% - 1px), rgb(var(--glass-art) / .65) calc(23% - 1px) 23%),
+    radial-gradient(circle closest-side, rgb(var(--glass-art) / .12), transparent);
+  mask-image: radial-gradient(circle closest-side, #000 72%, transparent 98%);
   transition: scale .35s ease;
 }
 
 /* Three parallel partitions, each carrying a row of events. */
 :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group + .group::after {
-  top: 13%;
-  width: 67%;
-  aspect-ratio: 1.7;
-  border-block: 1px solid rgb(var(--glass-art) / .5);
+  max-height: 8.25rem;
   background:
-    radial-gradient(circle closest-side, rgb(var(--glass-art) / .75) 45%, transparent 52%) 10% 0 / 25% 33.333% repeat,
-    repeating-linear-gradient(to bottom, rgb(var(--glass-art) / .10) 0 32%, rgb(var(--glass-art) / .45) 32% 33.333%);
-  mask-image: linear-gradient(to right, transparent, #000 8% 92%, transparent);
-  transform: translateX(-50%) skewY(-13deg);
+    radial-gradient(circle, rgb(var(--glass-art) / .9) 0 2.5px, transparent 3.5px) 0 0 / 20% calc(100% / 3) repeat,
+    linear-gradient(to bottom,
+      transparent 14%,
+      rgb(var(--glass-art) / .46) 14% 17%,
+      rgb(var(--glass-art) / .12) 17% 83%,
+      rgb(var(--glass-art) / .46) 83% 86%,
+      transparent 86%) 0 0 / 100% calc(100% / 3) repeat-y;
+  mask-image: linear-gradient(to right, transparent, #000 12% 88%, transparent);
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group > div:not(.pointer-events-none) {
+  flex-shrink: 0;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group > div:has(h2) {
+  position: relative;
+  isolation: isolate;
+}
+
+:where([data-design="modern"]) #root main .max-w-6xl > .grid > .group > div:has(h2)::before {
+  position: absolute;
+  z-index: -1;
+  inset: -.35rem -.55rem;
+  border-radius: .8rem;
+  background: rgb(var(--glass-base) / .34);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+  content: '';
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
@@ -394,7 +418,7 @@
 }
 
 :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group p {
-  color: var(--overview-muted);
+  color: color-mix(in srgb, var(--overview-ink) 75%, var(--overview-muted));
   font-size: 1rem;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -597,6 +621,10 @@
 
   :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group h2 {
     font-size: clamp(1.2rem, 3vw, 1.65rem);
+  }
+
+  :where([data-design="modern"]) #root main .max-w-6xl > .grid > .group::after {
+    margin-bottom: 0;
   }
 }
 
